@@ -1,0 +1,2894 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Mia教务管理工作台</title>
+<meta name="theme-color" content="#3D3151">
+<style>
+:root{
+--primary:#8B7CB3;--primary-dark:#6B5B8F;--primary-light:#EDE8F5;--primary-bg:#F5F2FA;
+--bg-page:#F0EBF5;--bg-card:#fff;--bg-input:#F7F5FA;
+--text-primary:#3D3151;--text-secondary:#8A7FA0;--text-tertiary:#B8AEC9;
+--success:#86C9A0;--warning:#E8B87D;--danger:#E8929C;--info:#9AAAD8;
+--border-light:#EDE8F2;--border-normal:#E0D8EA;--border-input:#E0D8EA;
+--shadow-card:0 2px 8px rgba(61,49,81,.06);--shadow-sidebar:4px 0 24px rgba(61,49,81,.1);--shadow-modal:0 8px 32px rgba(61,49,81,.14);
+--radius-sm:8px;--radius-md:14px;--radius-lg:18px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;width:100%;overflow:hidden;background:var(--bg-page);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased;font-size:14px;color:var(--text-primary)}
+input,textarea,select,button{font-family:inherit;font-size:inherit}
+button{cursor:pointer;border:none;background:none}
+a{text-decoration:none;color:inherit}
+
+/* Layout */
+#app{display:flex;flex-direction:column;height:100vh}
+.header{height:56px;background:linear-gradient(135deg,#3D3151,#5A4A75);display:flex;align-items:center;justify-content:space-between;padding:0 20px;color:#fff;flex-shrink:0;box-shadow:0 2px 8px rgba(61,49,81,.2);z-index:100}
+.header-title{font-size:17px;font-weight:600;letter-spacing:.5px}
+.header-sub{font-size:11px;color:rgba(255,255,255,.6);margin-top:1px}
+.header-right{display:flex;align-items:center;gap:12px}
+.header-icon-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.12);color:#fff;font-size:16px;transition:background .2s}
+.header-icon-btn:active{background:rgba(255,255,255,.25)}
+
+.main-area{flex:1;height:calc(100vh - 56px);overflow:hidden}
+.content{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px}
+.content-inner{max-width:1000px;margin:0 auto}
+
+/* Drawer Sidebar */
+.sidebar{position:fixed;top:0;left:0;width:280px;height:100vh;background:#fff;z-index:200;transform:translateX(-100%);transition:transform .3s ease;box-shadow:4px 0 24px rgba(61,49,81,.15);overflow-y:auto;overflow-x:hidden;display:flex;flex-direction:column}
+.sidebar.open{transform:translateX(0)}
+.sidebar-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.4);z-index:199;opacity:0;pointer-events:none;transition:opacity .3s ease}
+.sidebar-overlay.open{opacity:1;pointer-events:auto}
+.sidebar-logo{padding:20px 20px 16px;display:flex;align-items:center;gap:12px;flex-shrink:0;border-bottom:1px solid var(--border-light)}
+.sidebar-logo-icon{width:44px;height:44px;border-radius:12px;background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center;color:#fff;font-size:22px;font-weight:700;flex-shrink:0;box-shadow:0 2px 8px rgba(107,91,143,.3)}
+.sidebar-logo-text{display:flex;flex-direction:column;gap:2px;min-width:0}
+.sidebar-logo-title{font-size:17px;font-weight:700;color:var(--text-primary);white-space:nowrap}
+.sidebar-logo-sub{font-size:12px;color:var(--text-secondary);white-space:nowrap}
+.sidebar-nav{flex:1;padding:12px 12px 8px;display:flex;flex-direction:column;gap:2px}
+.sidebar-group-title{font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.5px;padding:14px 12px 6px}
+.sidebar-group-title:first-child{padding-top:6px}
+.sidebar-item{width:100%;height:46px;border-radius:var(--radius-sm);display:flex;align-items:center;padding:0 12px;gap:12px;color:var(--text-primary);font-size:16px;cursor:pointer;position:relative;flex-shrink:0;transition:background .15s}
+.sidebar-item .nav-icon{font-size:18px;width:22px;text-align:center;flex-shrink:0}
+.sidebar-item .nav-label{font-size:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-item:active{background:var(--primary-bg)}
+.sidebar-item.active{background:var(--primary-light);color:var(--primary-dark)}
+.sidebar-item.active::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:24px;background:var(--primary);border-radius:0 3px 3px 0}
+.sidebar-footer{padding:16px 20px;border-top:1px solid var(--border-light);flex-shrink:0}
+.sidebar-footer-info{display:flex;flex-direction:column;gap:4px}
+.sidebar-footer-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-tertiary)}
+.sidebar-footer-row .dot{width:6px;height:6px;border-radius:50%;background:var(--success);flex-shrink:0}
+
+/* Cards */
+.card{background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);border:1px solid var(--border-light);padding:16px;margin-bottom:12px}
+.card-title{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;justify-content:space-between}
+.card-section{margin-bottom:16px}
+.card-section:last-child{margin-bottom:0}
+
+/* Stats Grid */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px;margin-bottom:16px}
+.stat-card{background:var(--bg-card);border-radius:var(--radius-md);box-shadow:var(--shadow-card);border:1px solid var(--border-light);padding:16px;display:flex;flex-direction:column;gap:4px}
+.stat-icon{width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:8px}
+.stat-value{font-size:24px;font-weight:700;color:var(--text-primary)}
+.stat-label{font-size:12px;color:var(--text-secondary)}
+
+/* Buttons */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--radius-sm);font-size:14px;font-weight:500;transition:all .2s;border:none;cursor:pointer;white-space:nowrap}
+.btn-primary{background:linear-gradient(135deg,var(--primary),var(--primary-dark));color:#fff;box-shadow:0 2px 6px rgba(107,91,143,.3)}
+.btn-primary:active{transform:scale(.97);box-shadow:0 1px 3px rgba(107,91,143,.3)}
+.btn-secondary{background:var(--primary-light);color:var(--primary-dark)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-success{background:var(--success);color:#fff}
+.btn-warning{background:var(--warning);color:#fff}
+.btn-outline{background:transparent;border:1px solid var(--border-normal);color:var(--text-secondary)}
+.btn-outline:active{background:var(--primary-bg)}
+.btn-sm{padding:5px 10px;font-size:12px}
+.btn-lg{padding:12px 24px;font-size:16px}
+.btn-block{width:100%}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+
+/* Forms */
+.form-group{margin-bottom:14px}
+.form-label{display:block;font-size:13px;color:var(--text-secondary);margin-bottom:6px;font-weight:500}
+.form-label .req{color:var(--danger)}
+.form-input,.form-select,.form-textarea{width:100%;padding:10px 12px;border:1px solid var(--border-input);border-radius:var(--radius-sm);background:var(--bg-input);color:var(--text-primary);font-size:14px;transition:border-color .2s}
+.form-input:focus,.form-select:focus,.form-textarea:focus{outline:none;border-color:var(--primary);background:#fff}
+.form-textarea{resize:vertical;min-height:80px}
+.form-row{display:flex;gap:12px}
+.form-row>.form-group{flex:1}
+
+/* Tables */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;padding:10px 12px;color:var(--text-secondary);font-weight:500;border-bottom:1px solid var(--border-light);background:var(--primary-bg);white-space:nowrap}
+.data-table td{padding:10px 12px;border-bottom:1px solid var(--border-light);color:var(--text-primary)}
+.data-table tr:active{background:var(--primary-bg)}
+.data-table tr:last-child td{border-bottom:none}
+
+/* List */
+.list-item{display:flex;align-items:center;justify-content:space-between;padding:12px;border-bottom:1px solid var(--border-light);gap:8px}
+.list-item:last-child{border-bottom:none}
+.list-item-info{flex:1;min-width:0}
+.list-item-title{font-size:14px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item-desc{font-size:12px;color:var(--text-secondary);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list-item-actions{display:flex;gap:6px;flex-shrink:0}
+
+/* Badges */
+.badge{display:inline-flex;align-items:center;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:500}
+.badge-primary{background:var(--primary-light);color:var(--primary-dark)}
+.badge-success{background:rgba(134,201,160,.15);color:var(--success)}
+.badge-warning{background:rgba(232,184,125,.15);color:var(--warning)}
+.badge-danger{background:rgba(232,146,156,.15);color:var(--danger)}
+.badge-info{background:rgba(154,170,216,.15);color:var(--info)}
+
+/* Modal */
+.modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(61,49,81,.4);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
+.modal{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-modal);width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
+.modal-header{padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.modal-title{font-size:16px;font-weight:600;color:var(--text-primary)}
+.modal-close{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-tertiary);transition:all .2s}
+.modal-close:active{background:var(--primary-bg)}
+.modal-body{padding:20px;overflow-y:auto;flex:1}
+.modal-footer{padding:12px 20px;border-top:1px solid var(--border-light);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0}
+
+/* Empty State */
+.empty-state{text-align:center;padding:40px 20px;color:var(--text-tertiary)}
+.empty-state-icon{font-size:48px;margin-bottom:12px;opacity:.5}
+.empty-state-text{font-size:14px}
+
+/* Tabs */
+.tabs{display:flex;gap:4px;padding:4px;background:var(--primary-bg);border-radius:var(--radius-sm);margin-bottom:16px}
+.tab{flex:1;padding:8px 12px;text-align:center;font-size:13px;font-weight:500;color:var(--text-secondary);border-radius:6px;transition:all .2s;cursor:pointer}
+.tab.active{background:#fff;color:var(--primary-dark);box-shadow:0 1px 3px rgba(61,49,81,.08)}
+
+/* Search & Filter */
+.search-bar{display:flex;gap:8px;margin-bottom:12px}
+.search-bar .form-input{flex:1}
+
+/* File Upload */
+.upload-area{border:2px dashed var(--border-normal);border-radius:var(--radius-sm);padding:20px;text-align:center;transition:all .2s;cursor:pointer;background:var(--bg-input)}
+.upload-area:active{border-color:var(--primary);background:var(--primary-light)}
+.upload-icon{font-size:28px;color:var(--text-tertiary);margin-bottom:8px}
+.upload-text{font-size:13px;color:var(--text-secondary)}
+.upload-hint{font-size:11px;color:var(--text-tertiary);margin-top:4px}
+.file-preview{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.image-thumb{width:60px;height:60px;border-radius:var(--radius-sm);object-fit:cover;border:1px solid var(--border-light)}
+.file-tag{display:inline-flex;align-items:center;gap:4px;padding:4px 8px;background:var(--primary-light);border-radius:6px;font-size:12px;color:var(--primary-dark)}
+.file-tag .remove{cursor:pointer;font-weight:bold;opacity:.6}
+
+/* Toast */
+.toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:rgba(61,49,81,.9);color:#fff;padding:10px 20px;border-radius:var(--radius-sm);font-size:13px;z-index:9999;animation:toastIn .3s ease;backdrop-filter:blur(4px);max-width:90%;text-align:center}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(-10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+
+/* Detail Page */
+.detail-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.back-btn{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--bg-card);border:1px solid var(--border-light);font-size:18px;color:var(--text-secondary);flex-shrink:0;box-shadow:var(--shadow-card)}
+.back-btn:active{background:var(--primary-bg)}
+.detail-title{font-size:20px;font-weight:700;color:var(--text-primary)}
+.detail-sub{font-size:13px;color:var(--text-secondary);margin-top:2px}
+
+/* Avatar */
+.avatar{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;color:#fff;flex-shrink:0}
+.avatar-sm{width:32px;height:32px;font-size:13px}
+.avatar-lg{width:56px;height:56px;font-size:22px}
+
+/* Progress */
+.progress-bar{width:100%;height:6px;background:var(--primary-bg);border-radius:3px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,var(--primary),var(--primary-dark));border-radius:3px;transition:width .3s}
+
+/* Switch */
+.switch{position:relative;display:inline-block;width:44px;height:24px}
+.switch input{opacity:0;width:0;height:0}
+.switch-slider{position:absolute;cursor:pointer;top:0;left:0;right:0;bottom:0;background:var(--border-normal);border-radius:12px;transition:.3s}
+.switch-slider:before{content:"";position:absolute;height:18px;width:18px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:.3s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.switch input:checked+.switch-slider{background:var(--primary)}
+.switch input:checked+.switch-slider:before{transform:translateX(20px)}
+
+/* Checkbox */
+.check-item{display:flex;align-items:center;gap:8px;padding:8px 0}
+.checkbox{width:18px;height:18px;border:2px solid var(--border-normal);border-radius:4px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .2s;flex-shrink:0}
+.checkbox.checked{background:var(--primary);border-color:var(--primary)}
+.checkbox.checked::after{content:'';width:5px;height:9px;border:solid #fff;border-width:0 2px 2px 0;transform:rotate(45deg)}
+
+/* Points/Score display */
+.points-display{font-size:28px;font-weight:700;color:var(--warning)}
+
+/* Reward card */
+.reward-card{display:flex;flex-direction:column;align-items:center;padding:16px;border-radius:var(--radius-md);background:var(--bg-card);border:1px solid var(--border-light);box-shadow:var(--shadow-card);text-align:center}
+.reward-icon{font-size:32px;margin-bottom:8px}
+.reward-name{font-size:14px;font-weight:500;color:var(--text-primary);margin-bottom:4px}
+.reward-cost{font-size:13px;color:var(--warning);font-weight:600;margin-bottom:8px}
+
+/* Loading */
+.loading{text-align:center;padding:20px;color:var(--text-tertiary);font-size:13px}
+.spinner{display:inline-block;width:20px;height:20px;border:2px solid var(--primary-light);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-thumb{background:var(--border-normal);border-radius:3px}
+::-webkit-scrollbar-track{background:transparent}
+</style>
+</head>
+<body>
+<div id="app">
+  <div class="header">
+    <div style="display:flex;align-items:center;gap:12px">
+      <button class="header-icon-btn" data-action="toggle-sidebar" title="菜单">☰</button>
+      <div>
+        <div class="header-title">Mia教务工作台</div>
+        <div class="header-sub" id="headerSub">首页概览</div>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="header-icon-btn" data-action="go-settings" title="设置">⚙</button>
+    </div>
+  </div>
+  <div class="main-area">
+    <div class="content">
+      <div class="content-inner" id="contentInner">
+        <div class="loading"><div class="spinner"></div><p style="margin-top:8px">加载中...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="sidebar" id="sidebar"></div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div id="modalRoot"></div>
+<div id="toastRoot"></div>
+
+<script>
+/* ==================== IndexedDB 数据层 ==================== */
+const DB_NAME='mia_edu_workbench';
+const DB_VERSION=3;
+let _db=null;
+
+const STORE_DEFS={
+  students:{keyPath:'id',indexes:[{name:'name'},{name:'classId'},{name:'phone'}]},
+  classes:{keyPath:'id',indexes:[{name:'name'},{name:'teacher'}]},
+  parent_communications:{keyPath:'id',indexes:[{name:'studentId'},{name:'date'}]},
+  study_records:{keyPath:'id',indexes:[{name:'studentId'},{name:'classId'},{name:'date'}]},
+  error_analysis:{keyPath:'id',indexes:[{name:'studentId'},{name:'subject'},{name:'date'}]},
+  targeted_training:{keyPath:'id',indexes:[{name:'studentId'},{name:'errorId'}]},
+  study_plans:{keyPath:'id',indexes:[{name:'studentId'},{name:'status'},{name:'deadline'}]},
+  assessments:{keyPath:'id',indexes:[{name:'title'},{name:'createdAt'}]},
+  assessment_results:{keyPath:'id',indexes:[{name:'assessmentId'},{name:'studentId'}]},
+  homework:{keyPath:'id',indexes:[{name:'classId'},{name:'createdAt'},{name:'status'}]},
+  homework_records:{keyPath:'id',indexes:[{name:'homeworkId'},{name:'studentId'},{name:'status'}]},
+  attendance:{keyPath:'id',indexes:[{name:'classId'},{name:'studentId'},{name:'date'},{name:'type'}]},
+  points_records:{keyPath:'id',indexes:[{name:'studentId'},{name:'type'},{name:'date'}]},
+  rewards:{keyPath:'id',indexes:[{name:'name'},{name:'active'}]},
+  exchange_records:{keyPath:'id',indexes:[{name:'studentId'},{name:'rewardId'},{name:'date'}]},
+  fees:{keyPath:'id',indexes:[{name:'name'},{name:'classId'},{name:'dueDate'}]},
+  payment_records:{keyPath:'id',indexes:[{name:'feeId'},{name:'studentId'},{name:'status'}]}
+};
+
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    if(_db)return resolve(_db);
+    const req=indexedDB.open(DB_NAME,DB_VERSION);
+    req.onupgradeneeded=e=>{
+      const db=e.target.result;
+      for(const [storeName,config] of Object.entries(STORE_DEFS)){
+        let store;
+        if(!db.objectStoreNames.contains(storeName)){
+          store=db.createObjectStore(storeName,{keyPath:config.keyPath});
+        }else{
+          store=e.target.transaction.objectStore(storeName);
+        }
+        if(config.indexes){
+          config.indexes.forEach(idx=>{
+            if(!store.indexNames.contains(idx.name)){
+              store.createIndex(idx.name,idx.name,{unique:false});
+            }
+          });
+        }
+      }
+    };
+    req.onsuccess=e=>{_db=e.target.result;resolve(_db)};
+    req.onerror=e=>reject(e.target.error);
+  });
+}
+
+async function dbOp(storeName,mode,fn){
+  const db=await openDB();
+  return new Promise((resolve,reject)=>{
+    const tx=db.transaction(storeName,mode);
+    const store=tx.objectStore(storeName);
+    const result=fn(store);
+    tx.oncomplete=()=>resolve(result instanceof IDBRequest?result.result:result);
+    tx.onerror=()=>reject(tx.error);
+    tx.onabort=()=>reject(tx.error);
+  });
+}
+
+async function dbAdd(storeName,data){return dbOp(storeName,'readwrite',s=>s.add(data))}
+async function dbGet(storeName,id){return dbOp(storeName,'readonly',s=>s.get(id))}
+async function dbGetAll(storeName){return dbOp(storeName,'readonly',s=>s.getAll())}
+async function dbPut(storeName,data){return dbOp(storeName,'readwrite',s=>s.put(data))}
+async function dbDel(storeName,id){return dbOp(storeName,'readwrite',s=>s.delete(id))}
+async function dbCount(storeName){return dbOp(storeName,'readonly',s=>s.count())}
+
+async function dbQuery(storeName,indexName,value){
+  const db=await openDB();
+  return new Promise((resolve)=>{
+    const tx=db.transaction(storeName,'readonly');
+    const store=tx.objectStore(storeName);
+    try{
+      const idx=indexName?store.index(indexName):store;
+      const req=idx.getAll(value);
+      req.onsuccess=()=>resolve(req.result||[]);
+      req.onerror=()=>{
+        // Index not found - fallback to full scan
+        const allReq=store.getAll();
+        allReq.onsuccess=()=>{
+          const results=(allReq.result||[]).filter(r=>indexName?r[indexName]===value:true);
+          resolve(results);
+        };
+        allReq.onerror=()=>resolve([]);
+      };
+    }catch(e){
+      // Index doesn't exist - fallback to full scan
+      const allReq=store.getAll();
+      allReq.onsuccess=()=>{
+        const results=(allReq.result||[]).filter(r=>indexName?r[indexName]===value:true);
+        resolve(results);
+      };
+      allReq.onerror=()=>resolve([]);
+    }
+  });
+}
+
+function genId(){return Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+
+/* ==================== 通用工具 ==================== */
+function toast(msg,duration=2000){
+  const root=document.getElementById('toastRoot');
+  const el=document.createElement('div');
+  el.className='toast';
+  el.textContent=msg;
+  root.appendChild(el);
+  setTimeout(()=>{el.style.opacity='0';el.style.transition='opacity .3s';setTimeout(()=>el.remove(),300)},duration);
+}
+
+function fmtDate(d){
+  if(!d)return '';
+  const dt=new Date(d);
+  if(isNaN(dt))return d;
+  const y=dt.getFullYear();
+  const m=String(dt.getMonth()+1).padStart(2,'0');
+  const day=String(dt.getDate()).padStart(2,'0');
+  return `${y}-${m}-${day}`;
+}
+
+function fmtDateTime(d){
+  if(!d)return '';
+  const dt=new Date(d);
+  if(isNaN(dt))return d;
+  return fmtDate(d)+' '+String(dt.getHours()).padStart(2,'0')+':'+String(dt.getMinutes()).padStart(2,'0');
+}
+
+function todayStr(){return fmtDate(new Date())}
+
+function avatarColor(name){
+  const colors=['#8B7CB3','#86C9A0','#E8B87D','#E8929C','#9AAAD8','#6B5B8F','#D4A5C5','#7BA8C4'];
+  let hash=0;
+  for(let i=0;i<name.length;i++)hash=name.charCodeAt(i)+((hash<<5)-hash);
+  return colors[Math.abs(hash)%colors.length];
+}
+
+function getInitials(name){
+  if(!name)return '?';
+  return name.charAt(0).toUpperCase();
+}
+
+function escapeHtml(str){
+  if(str==null)return '';
+  return String(str).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+/* ==================== 文件上传 ==================== */
+function readFileAsBase64(file){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=()=>resolve(reader.result);
+    reader.onerror=()=>reject(reader.error);
+    reader.readAsDataURL(file);
+  });
+}
+
+async function compressImage(file,maxWidth=800,maxHeight=800,quality=0.7){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      const img=new Image();
+      img.onload=()=>{
+        let w=img.width,h=img.height;
+        if(w>maxWidth){h=h*maxWidth/w;w=maxWidth}
+        if(h>maxHeight){w=w*maxHeight/h;h=maxHeight}
+        const canvas=document.createElement('canvas');
+        canvas.width=w;canvas.height=h;
+        const ctx=canvas.getContext('2d');
+        ctx.drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',quality));
+      };
+      img.onerror=reject;
+      img.src=e.target.result;
+    };
+    reader.onerror=reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+async function handleImageUpload(inputEl){
+  const files=inputEl.files;
+  if(!files||!files.length)return [];
+  const images=[];
+  for(const file of files){
+    if(!file.type.startsWith('image/'))continue;
+    const compressed=await compressImage(file);
+    images.push({name:file.name,data:compressed,type:file.type,size:file.size});
+  }
+  return images;
+}
+
+async function handleFileUpload(inputEl){
+  const files=inputEl.files;
+  if(!files||!files.length)return {images:[],documents:[]};
+  const images=[],documents=[];
+  for(const file of files){
+    if(file.type.startsWith('image/')){
+      const compressed=await compressImage(file);
+      images.push({name:file.name,data:compressed,type:file.type,size:file.size});
+    }else{
+      const base64=await readFileAsBase64(file);
+      documents.push({name:file.name,type:file.type,size:file.size,data:base64});
+    }
+  }
+  return {images,documents};
+}
+
+function fileUploadAreaHTML(imgId,fileId,imgPreviewId,filePreviewId){
+  return `
+  <div class="form-group">
+    <label class="form-label">图片附件</label>
+    <div class="upload-area" onclick="document.getElementById('${imgId}').click()">
+      <div class="upload-icon">📷</div>
+      <div class="upload-text">点击上传图片</div>
+      <div class="upload-hint">支持 JPG/PNG 等</div>
+    </div>
+    <input type="file" id="${imgId}" accept="image/*" multiple style="display:none" data-img-preview="${imgPreviewId}">
+    <div class="file-preview" id="${imgPreviewId}"></div>
+  </div>
+  <div class="form-group">
+    <label class="form-label">文档附件</label>
+    <div class="upload-area" onclick="document.getElementById('${fileId}').click()">
+      <div class="upload-icon">📎</div>
+      <div class="upload-text">点击上传文档</div>
+      <div class="upload-hint">支持 Excel/Word/PDF 等</div>
+    </div>
+    <input type="file" id="${fileId}" accept=".xls,.xlsx,.doc,.docx,.pdf,.txt,.csv" multiple style="display:none" data-file-preview="${filePreviewId}">
+    <div class="file-preview" id="${filePreviewId}"></div>
+  </div>`;
+}
+
+// Store uploaded files temporarily per modal
+let _tempImages={};
+let _tempDocuments={};
+
+function setupImagePreview(inputId,previewId){
+  const input=document.getElementById(inputId);
+  if(!input)return;
+  input.addEventListener('change',async()=>{
+    const preview=document.getElementById(previewId);
+    if(!preview)return;
+    const key=inputId;
+    if(!_tempImages[key])_tempImages[key]=[];
+    const imgs=await handleImageUpload(input);
+    _tempImages[key].push(...imgs);
+    renderImagePreview(previewId,key);
+  });
+}
+
+function setupFilePreview(inputId,previewId){
+  const input=document.getElementById(inputId);
+  if(!input)return;
+  input.addEventListener('change',async()=>{
+    const preview=document.getElementById(previewId);
+    if(!preview)return;
+    const key=inputId;
+    if(!_tempDocuments[key])_tempDocuments[key]=[];
+    const {documents}=await handleFileUpload(input);
+    _tempDocuments[key].push(...documents);
+    renderFilePreview(previewId,key);
+  });
+}
+
+function renderImagePreview(previewId,key){
+  const preview=document.getElementById(previewId);
+  if(!preview)return;
+  const imgs=_tempImages[key]||[];
+  preview.innerHTML=imgs.map((img,i)=>
+    `<div style="position:relative"><img class="image-thumb" src="${img.data}"><span class="remove" style="position:absolute;top:-4px;right:-4px;background:var(--danger);color:#fff;width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;cursor:pointer" onclick="removeTempImage('${key}',${i},'${previewId}')">×</span></div>`
+  ).join('');
+}
+
+function renderFilePreview(previewId,key){
+  const preview=document.getElementById(previewId);
+  if(!preview)return;
+  const docs=_tempDocuments[key]||[];
+  preview.innerHTML=docs.map((doc,i)=>
+    `<span class="file-tag">📄 ${escapeHtml(doc.name)} <span class="remove" onclick="removeTempDocument('${key}',${i},'${previewId}')">×</span></span>`
+  ).join('');
+}
+
+function removeTempImage(key,index,previewId){
+  if(_tempImages[key])_tempImages[key].splice(index,1);
+  renderImagePreview(previewId,key);
+}
+
+function removeTempDocument(key,index,previewId){
+  if(_tempDocuments[key])_tempDocuments[key].splice(index,1);
+  renderFilePreview(previewId,key);
+}
+
+function clearTempFiles(){
+  _tempImages={};
+  _tempDocuments={};
+}
+
+/* ==================== 路由系统 ==================== */
+const routes=[];
+function route(path,handler){routes.push({path,handler})}
+
+function getCurrentHash(){
+  const h=location.hash.slice(1);
+  return h||'/dashboard';
+}
+
+function matchRoute(path){
+  for(const r of routes){
+    const paramNames=[];
+    const regexStr=r.path.replace(/:([^/]+)/g,(_,p)=>{paramNames.push(p);return'([^/]+)'});
+    const regex=new RegExp('^'+regexStr+'$');
+    const match=path.match(regex);
+    if(match){
+      const params={};
+      paramNames.forEach((n,i)=>params[n]=decodeURIComponent(match[i+1]));
+      return{handler:r.handler,params};
+    }
+  }
+  return null;
+}
+
+function navigate(path){
+  const normalizedPath=path.startsWith('/')?path:'/'+path;
+  const target='#'+normalizedPath;
+  const current='#'+getCurrentHash();
+  if(target===current){
+    handleRoute();
+  }else{
+    location.hash=target;
+  }
+}
+
+async function handleRoute(){
+  const path=getCurrentHash();
+  const matched=matchRoute(path);
+  const content=document.getElementById('contentInner');
+  content.innerHTML='<div class="loading"><div class="spinner"></div><p style="margin-top:8px">加载中...</p></div>';
+  try{
+    if(matched){
+      await matched.handler(matched.params||{});
+      // If handler used showModal and didn't update content, clear loading state
+      const loadingEl=content.querySelector(':scope>div.loading');
+      if(loadingEl)content.innerHTML='';
+    }else{
+      content.innerHTML='<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">页面不存在</div></div>';
+    }
+  }catch(err){
+    console.error('Route error:',err);
+    content.innerHTML='<div class="empty-state"><div class="empty-state-icon">⚠️</div><div class="empty-state-text">加载失败: '+escapeHtml(err.message)+'</div></div>';
+  }
+  updateSidebarActive(path);
+  updateHeaderSub(path);
+}
+
+window.addEventListener('hashchange',handleRoute);
+
+/* ==================== 导航栏 ==================== */
+const navItems=[
+  {path:'/dashboard',icon:'🏠',label:'工作台首页'},
+  {path:'/students',icon:'👥',label:'学生管理'},
+  {path:'/classes',icon:'📚',label:'班级管理'},
+  {path:'/parent-comm',icon:'💬',label:'家长沟通'},
+  {path:'/study',icon:'📊',label:'学情分析'},
+  {path:'/plans',icon:'📝',label:'学习规划'},
+  {path:'/assessments',icon:'📋',label:'新生测评'},
+  {path:'/homework',icon:'✏️',label:'发布作业'},
+  {path:'/attendance',icon:'✓',label:'考勤管理'},
+  {path:'/points',icon:'⭐',label:'积分管理'},
+  {path:'/fees',icon:'💰',label:'收费管理'},
+  {path:'/settings',icon:'⚙',label:'设置'}
+];
+
+const navGroups=[
+  {title:'首页',items:[navItems[0]]},
+  {title:'基础数据',items:[navItems[1],navItems[2],navItems[3]]},
+  {title:'教学核心',items:[navItems[4],navItems[5],navItems[6],navItems[7]]},
+  {title:'管理辅助',items:[navItems[8],navItems[9],navItems[10]]},
+  {title:'系统',items:[navItems[11]]}
+];
+
+function renderSidebar(){
+  const sidebar=document.getElementById('sidebar');
+  let html=`
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">M</div>
+      <div class="sidebar-logo-text">
+        <div class="sidebar-logo-title">Mia教务工作台</div>
+        <div class="sidebar-logo-sub">英语教师 · 教务管理</div>
+      </div>
+    </div>
+    <div class="sidebar-nav">`;
+  navGroups.forEach(group=>{
+    html+=`<div class="sidebar-group-title">${group.title}</div>`;
+    group.items.forEach(item=>{
+      html+=`<div class="sidebar-item" data-path="${item.path}"><span class="nav-icon">${item.icon}</span><span class="nav-label">${item.label}</span></div>`;
+    });
+  });
+  html+=`</div>
+    <div class="sidebar-footer">
+      <div class="sidebar-footer-info">
+        <div class="sidebar-footer-row"><span class="dot"></span>数据存储：浏览器本地</div>
+        <div class="sidebar-footer-row">版本 v1.0</div>
+      </div>
+    </div>`;
+  sidebar.innerHTML=html;
+  sidebar.querySelectorAll('.sidebar-item').forEach(el=>{
+    el.addEventListener('click',()=>{
+      const p=el.dataset.path;
+      if(p){
+        closeDrawer();
+        navigate(p);
+      }
+    });
+  });
+}
+
+function openDrawer(){
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('open');
+}
+
+function closeDrawer(){
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+function updateSidebarActive(path){
+  document.querySelectorAll('.sidebar-item').forEach(el=>{
+    const itemPath=el.dataset.path;
+    if(itemPath && (path===itemPath || path.startsWith(itemPath+'/'))){
+      el.classList.add('active');
+    }else{
+      el.classList.remove('active');
+    }
+  });
+}
+
+function updateHeaderSub(path){
+  const item=navItems.find(n=>path===n.path||path.startsWith(n.path+'/'));
+  const sub=document.getElementById('headerSub');
+  sub.textContent=item?item.label:'';
+}
+
+/* ==================== 模态框 ==================== */
+function showModal(title,bodyHTML,footerHTML){
+  const root=document.getElementById('modalRoot');
+  root.innerHTML=`
+    <div class="modal-overlay" id="modalOverlay">
+      <div class="modal">
+        <div class="modal-header">
+          <div class="modal-title">${escapeHtml(title)}</div>
+          <button class="modal-close" data-action="close-modal">×</button>
+        </div>
+        <div class="modal-body">${bodyHTML}</div>
+        ${footerHTML?`<div class="modal-footer">${footerHTML}</div>`:''}
+      </div>
+    </div>`;
+  document.getElementById('modalOverlay').addEventListener('click',e=>{
+    if(e.target.id==='modalOverlay')closeModal();
+  });
+}
+
+function closeModal(){
+  document.getElementById('modalRoot').innerHTML='';
+  clearTempFiles();
+}
+
+function confirmDialog(title,message,onConfirm){
+  showModal(title,`<p style="font-size:14px;color:var(--text-primary);line-height:1.6">${escapeHtml(message)}</p>`,
+    `<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="confirmBtn">确定</button>`);
+  document.getElementById('confirmBtn').addEventListener('click',()=>{closeModal();onConfirm()});
+}
+
+/* ==================== 首页 Dashboard ==================== */
+route('/dashboard',async()=>{
+  const content=document.getElementById('contentInner');
+  const studentCount=await dbCount('students');
+  const classCount=await dbCount('classes');
+  const homeworkCount=await dbCount('homework');
+  const commCount=await dbCount('parent_communications');
+  const attendanceToday=(await dbQuery('attendance','date',todayStr())).length;
+  const plansActive=(await dbQuery('study_plans','status','active')).length;
+  const feesUnpaid=(await dbQuery('payment_records','status','unpaid')).length;
+
+  content.innerHTML=`
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--primary-light);color:var(--primary-dark)">👥</div>
+        <div class="stat-value">${studentCount}</div>
+        <div class="stat-label">学生总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(134,201,160,.15);color:var(--success)">📚</div>
+        <div class="stat-value">${classCount}</div>
+        <div class="stat-label">班级总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(232,184,125,.15);color:var(--warning)">✏️</div>
+        <div class="stat-value">${homeworkCount}</div>
+        <div class="stat-label">作业总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(154,170,216,.15);color:var(--info)">💬</div>
+        <div class="stat-value">${commCount}</div>
+        <div class="stat-label">家长沟通</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(134,201,160,.15);color:var(--success)">✓</div>
+        <div class="stat-value">${attendanceToday}</div>
+        <div class="stat-label">今日考勤</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:var(--primary-light);color:var(--primary-dark)">📝</div>
+        <div class="stat-value">${plansActive}</div>
+        <div class="stat-label">进行中规划</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:rgba(232,146,156,.15);color:var(--danger)">💰</div>
+        <div class="stat-value">${feesUnpaid}</div>
+        <div class="stat-label">待缴费用</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">快捷操作</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:10px">
+        <button class="btn btn-primary btn-block" data-action="nav" data-path="/students/new">➕ 新增学生</button>
+        <button class="btn btn-secondary btn-block" data-action="nav" data-path="/classes/new">➕ 新增班级</button>
+        <button class="btn btn-secondary btn-block" data-action="nav" data-path="/homework/new">➕ 发布作业</button>
+        <button class="btn btn-secondary btn-block" data-action="nav" data-path="/parent-comm/new">➕ 沟通记录</button>
+        <button class="btn btn-secondary btn-block" data-action="nav" data-path="/attendance">📋 今日考勤</button>
+        <button class="btn btn-secondary btn-block" data-action="nav" data-path="/points">⭐ 积分管理</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">最近沟通记录</div>
+      <div id="recentComm"></div>
+    </div>
+  `;
+
+  const comms=await dbGetAll('parent_communications');
+  comms.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  const recent=comms.slice(0,5);
+  const commEl=document.getElementById('recentComm');
+  if(recent.length===0){
+    commEl.innerHTML='<div class="empty-state"><div class="empty-state-text">暂无沟通记录</div></div>';
+  }else{
+    commEl.innerHTML=recent.map(c=>`<div class="list-item"><div class="list-item-info"><div class="list-item-title">${escapeHtml(c.studentName||'未知学生')}</div><div class="list-item-desc">${escapeHtml(c.content||'').slice(0,50)} · ${fmtDate(c.date)}</div></div><span class="badge badge-${c.type==='phone'?'info':'success'}">${c.type==='phone'?'电话':'微信'}</span></div>`).join('');
+  }
+});
+
+/* ==================== 学生管理 ==================== */
+route('/students',async(params)=>{
+  await renderStudentList(params);
+});
+
+async function renderStudentList(params){
+  const content=document.getElementById('contentInner');
+  const students=await dbGetAll('students');
+  const classes=await dbGetAll('classes');
+  const classMap={};
+  classes.forEach(c=>classMap[c.id]=c.name);
+
+  content.innerHTML=`
+    <div class="search-bar">
+      <input class="form-input" id="studentSearch" placeholder="搜索学生姓名/手机号..." data-action="search-students">
+      <select class="form-select" id="studentClassFilter" style="width:140px" data-action="filter-students">
+        <option value="">全部班级</option>
+        ${classes.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+      </select>
+      <button class="btn btn-primary" data-action="nav" data-path="/students/new">新增</button>
+    </div>
+    <div class="card">
+      <div id="studentList"></div>
+    </div>
+  `;
+
+  const renderList=(list)=>{
+    const el=document.getElementById('studentList');
+    if(list.length===0){
+      el.innerHTML='<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-text">暂无学生数据</div></div>';
+      return;
+    }
+    el.innerHTML=list.map(s=>`
+      <div class="list-item" data-action="nav" data-path="/students/${s.id}">
+        <div class="avatar" style="background:${avatarColor(s.name||'?')}">${getInitials(s.name||'?')}</div>
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(s.name||'')}</div>
+          <div class="list-item-desc">${escapeHtml(classMap[s.classId]||'未分班')} · ${escapeHtml(s.phone||'无手机')}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-outline" data-action="edit-student" data-id="${s.id}">编辑</button>
+          <button class="btn btn-sm btn-danger" data-action="del-student" data-id="${s.id}">删除</button>
+        </div>
+      </div>
+    `).join('');
+  };
+
+  let filtered=students;
+  renderList(filtered);
+
+  const searchInput=document.getElementById('studentSearch');
+  const classFilter=document.getElementById('studentClassFilter');
+  const doFilter=()=>{
+    const q=searchInput.value.trim().toLowerCase();
+    const cls=classFilter.value;
+    filtered=students.filter(s=>{
+      const matchQ=!q||(s.name||'').toLowerCase().includes(q)||(s.phone||'').includes(q);
+      const matchC=!cls||s.classId===cls;
+      return matchQ&&matchC;
+    });
+    renderList(filtered);
+  };
+  searchInput.addEventListener('input',doFilter);
+  classFilter.addEventListener('change',doFilter);
+}
+
+route('/students/new',async()=>{await renderStudentForm(null)});
+route('/students/:id',async(params)=>{await renderStudentDetail(params.id)});
+
+async function renderStudentForm(editId){
+  let student=null;
+  if(editId){
+    student=await dbGet('students',editId);
+  }
+  const classes=await dbGetAll('classes');
+  const title=editId?'编辑学生':'新增学生';
+  const body=`
+    <div class="form-group">
+      <label class="form-label">姓名 <span class="req">*</span></label>
+      <input class="form-input" id="sName" value="${escapeHtml(student?.name||'')}" placeholder="请输入学生姓名">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">性别</label>
+        <select class="form-select" id="sGender">
+          <option value="male" ${student?.gender==='male'?'selected':''}>男</option>
+          <option value="female" ${student?.gender==='female'?'selected':''}>女</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">出生日期</label>
+        <input class="form-input" type="date" id="sBirthday" value="${student?.birthday||''}">
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">手机号</label>
+        <input class="form-input" id="sPhone" value="${escapeHtml(student?.phone||'')}" placeholder="家长手机号">
+      </div>
+      <div class="form-group">
+        <label class="form-label">年级</label>
+        <input class="form-input" id="sGrade" value="${escapeHtml(student?.grade||'')}" placeholder="如：三年级">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">所属班级</label>
+      <select class="form-select" id="sClassId">
+        <option value="">未分班</option>
+        ${classes.map(c=>`<option value="${c.id}" ${student?.classId===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">家长姓名</label>
+      <input class="form-input" id="sParentName" value="${escapeHtml(student?.parentName||'')}" placeholder="家长姓名">
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注</label>
+      <textarea class="form-textarea" id="sRemark" placeholder="其他信息...">${escapeHtml(student?.remark||'')}</textarea>
+    </div>
+  `;
+  const footer=`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveStudentBtn">保存</button>`;
+  showModal(title,body,footer);
+  document.getElementById('saveStudentBtn').addEventListener('click',async()=>{
+    const name=document.getElementById('sName').value.trim();
+    if(!name){toast('请输入学生姓名');return}
+    const data={
+      id:editId||genId(),
+      name,
+      gender:document.getElementById('sGender').value,
+      birthday:document.getElementById('sBirthday').value,
+      phone:document.getElementById('sPhone').value.trim(),
+      grade:document.getElementById('sGrade').value.trim(),
+      classId:document.getElementById('sClassId').value,
+      parentName:document.getElementById('sParentName').value.trim(),
+      remark:document.getElementById('sRemark').value.trim(),
+      createdAt:student?.createdAt||new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    };
+    await dbPut('students',data);
+    closeModal();
+    toast('保存成功');
+    if(editId){
+      navigate('/students/'+editId);
+    }else{
+      navigate('/students');
+    }
+  });
+}
+
+async function renderStudentDetail(id){
+  const student=await dbGet('students',id);
+  if(!student){
+    document.getElementById('contentInner').innerHTML='<div class="empty-state"><div class="empty-state-icon">🔍</div><div class="empty-state-text">学生不存在</div></div>';
+    return;
+  }
+  const classes=await dbGetAll('classes');
+  const className=classes.find(c=>c.id===student.classId)?.name||'未分班';
+  const comms=await dbQuery('parent_communications','studentId',id);
+  const records=await dbQuery('study_records','studentId',id);
+  const plans=await dbQuery('study_plans','studentId',id);
+  const points=await dbQuery('points_records','studentId',id);
+  const totalPoints=points.reduce((sum,p)=>sum+(p.type==='add'?p.amount:-p.amount),0);
+
+  document.getElementById('contentInner').innerHTML=`
+    <div class="detail-header">
+      <button class="back-btn" data-action="nav" data-path="/students">‹</button>
+      <div class="avatar avatar-lg" style="background:${avatarColor(student.name||'?')}">${getInitials(student.name||'?')}</div>
+      <div style="flex:1">
+        <div class="detail-title">${escapeHtml(student.name)}</div>
+        <div class="detail-sub">${escapeHtml(className)} · ${escapeHtml(student.grade||'')} · ${escapeHtml(student.phone||'无手机')}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" data-action="edit-student" data-id="${id}">编辑</button>
+    </div>
+
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat-card" style="text-align:center">
+        <div class="stat-value">${comms.length}</div>
+        <div class="stat-label">沟通记录</div>
+      </div>
+      <div class="stat-card" style="text-align:center">
+        <div class="stat-value">${records.length}</div>
+        <div class="stat-label">学情记录</div>
+      </div>
+      <div class="stat-card" style="text-align:center">
+        <div class="stat-value" style="color:var(--warning)">${totalPoints}</div>
+        <div class="stat-label">当前积分</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">基本信息</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+        <div><span style="color:var(--text-secondary)">性别：</span>${student.gender==='female'?'女':'男'}</div>
+        <div><span style="color:var(--text-secondary)">出生：</span>${fmtDate(student.birthday)||'-'}</div>
+        <div><span style="color:var(--text-secondary)">家长：</span>${escapeHtml(student.parentName||'-')}</div>
+        <div><span style="color:var(--text-secondary)">手机：</span>${escapeHtml(student.phone||'-')}</div>
+      </div>
+      ${student.remark?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px"><span style="color:var(--text-secondary)">备注：</span>${escapeHtml(student.remark)}</div>`:''}
+    </div>
+
+    <div class="card">
+      <div class="card-title">最近沟通 <button class="btn btn-sm btn-primary" data-action="nav" data-path="/parent-comm/new?studentId=${id}" style="float:right">新增</button></div>
+      <div>${comms.length===0?'<div class="empty-state"><div class="empty-state-text">暂无记录</div></div>':comms.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).slice(0,5).map(c=>`<div class="list-item"><div class="list-item-info"><div class="list-item-title">${escapeHtml(c.content||'').slice(0,60)}</div><div class="list-item-desc">${c.type==='phone'?'电话':'微信'} · ${fmtDate(c.date)}</div></div></div>`).join('')}</div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">学习规划 <button class="btn btn-sm btn-primary" data-action="nav" data-path="/plans/new?studentId=${id}" style="float:right">新增</button></div>
+      <div>${plans.length===0?'<div class="empty-state"><div class="empty-state-text">暂无规划</div></div>':plans.map(p=>`<div class="list-item"><div class="list-item-info"><div class="list-item-title">${escapeHtml(p.title||'')}</div><div class="list-item-desc">截止：${fmtDate(p.deadline)} <span class="badge badge-${p.status==='done'?'success':'warning'}">${p.status==='done'?'已完成':'进行中'}</span></div></div></div>`).join('')}</div>
+    </div>
+  `;
+}
+
+/* ==================== 班级管理 ==================== */
+route('/classes',async()=>{
+  const content=document.getElementById('contentInner');
+  const classes=await dbGetAll('classes');
+  const students=await dbGetAll('students');
+  const studentCountByClass={};
+  students.forEach(s=>{if(s.classId)studentCountByClass[s.classId]=(studentCountByClass[s.classId]||0)+1});
+
+  content.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="font-size:18px;font-weight:600">班级管理</h2>
+      <button class="btn btn-primary" data-action="nav" data-path="/classes/new">新增班级</button>
+    </div>
+    <div class="card">
+      <div id="classList"></div>
+    </div>
+  `;
+
+  const el=document.getElementById('classList');
+  if(classes.length===0){
+    el.innerHTML='<div class="empty-state"><div class="empty-state-icon">📚</div><div class="empty-state-text">暂无班级数据</div></div>';
+  }else{
+    el.innerHTML=classes.map(c=>`
+      <div class="list-item" data-action="nav" data-path="/classes/${c.id}">
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(c.name)}</div>
+          <div class="list-item-desc">教师：${escapeHtml(c.teacher||'未指定')} · ${studentCountByClass[c.id]||0}名学生 · ${escapeHtml(c.schedule||'未设置上课时间')}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-outline" data-action="edit-class" data-id="${c.id}">编辑</button>
+          <button class="btn btn-sm btn-danger" data-action="del-class" data-id="${c.id}">删除</button>
+        </div>
+      </div>
+    `).join('');
+  }
+});
+
+route('/classes/new',async()=>{await renderClassForm(null)});
+route('/classes/:id',async(params)=>{await renderClassDetail(params.id)});
+
+async function renderClassForm(editId){
+  let cls=null;
+  if(editId)cls=await dbGet('classes',editId);
+  const title=editId?'编辑班级':'新增班级';
+  const body=`
+    <div class="form-group">
+      <label class="form-label">班级名称 <span class="req">*</span></label>
+      <input class="form-input" id="cName" value="${escapeHtml(cls?.name||'')}" placeholder="如：三年级数学A班">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">科目</label>
+        <input class="form-input" id="cSubject" value="${escapeHtml(cls?.subject||'')}" placeholder="如：数学">
+      </div>
+      <div class="form-group">
+        <label class="form-label">教师</label>
+        <input class="form-input" id="cTeacher" value="${escapeHtml(cls?.teacher||'')}" placeholder="教师姓名">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">上课时间</label>
+      <input class="form-input" id="cSchedule" value="${escapeHtml(cls?.schedule||'')}" placeholder="如：周六 09:00-11:00">
+    </div>
+    <div class="form-group">
+      <label class="form-label">教室</label>
+      <input class="form-input" id="cRoom" value="${escapeHtml(cls?.room||'')}" placeholder="教室位置">
+    </div>
+    <div class="form-group">
+      <label class="form-label">备注</label>
+      <textarea class="form-textarea" id="cRemark" placeholder="其他信息...">${escapeHtml(cls?.remark||'')}</textarea>
+    </div>
+  `;
+  const footer=`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveClassBtn">保存</button>`;
+  showModal(title,body,footer);
+  document.getElementById('saveClassBtn').addEventListener('click',async()=>{
+    const name=document.getElementById('cName').value.trim();
+    if(!name){toast('请输入班级名称');return}
+    const data={
+      id:editId||genId(),
+      name,
+      subject:document.getElementById('cSubject').value.trim(),
+      teacher:document.getElementById('cTeacher').value.trim(),
+      schedule:document.getElementById('cSchedule').value.trim(),
+      room:document.getElementById('cRoom').value.trim(),
+      remark:document.getElementById('cRemark').value.trim(),
+      createdAt:cls?.createdAt||new Date().toISOString(),
+      updatedAt:new Date().toISOString()
+    };
+    await dbPut('classes',data);
+    closeModal();
+    toast('保存成功');
+    navigate('/classes');
+  });
+}
+
+async function renderClassDetail(id){
+  const cls=await dbGet('classes',id);
+  if(!cls){
+    document.getElementById('contentInner').innerHTML='<div class="empty-state"><div class="empty-state-text">班级不存在</div></div>';
+    return;
+  }
+  const students=await dbQuery('students','classId',id);
+  document.getElementById('contentInner').innerHTML=`
+    <div class="detail-header">
+      <button class="back-btn" data-action="nav" data-path="/classes">‹</button>
+      <div style="flex:1">
+        <div class="detail-title">${escapeHtml(cls.name)}</div>
+        <div class="detail-sub">${escapeHtml(cls.subject||'')} · ${escapeHtml(cls.teacher||'未指定教师')}</div>
+      </div>
+      <button class="btn btn-primary btn-sm" data-action="edit-class" data-id="${id}">编辑</button>
+    </div>
+    <div class="card">
+      <div class="card-title">班级信息</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-size:13px">
+        <div><span style="color:var(--text-secondary)">上课时间：</span>${escapeHtml(cls.schedule||'-')}</div>
+        <div><span style="color:var(--text-secondary)">教室：</span>${escapeHtml(cls.room||'-')}</div>
+      </div>
+      ${cls.remark?`<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border-light);font-size:13px"><span style="color:var(--text-secondary)">备注：</span>${escapeHtml(cls.remark)}</div>`:''}
+    </div>
+    <div class="card">
+      <div class="card-title">班级学生（${students.length}）</div>
+      <div>${students.length===0?'<div class="empty-state"><div class="empty-state-text">暂无学生</div></div>':students.map(s=>`
+        <div class="list-item" data-action="nav" data-path="/students/${s.id}">
+          <div class="avatar avatar-sm" style="background:${avatarColor(s.name||'?')}">${getInitials(s.name||'?')}</div>
+          <div class="list-item-info"><div class="list-item-title">${escapeHtml(s.name)}</div><div class="list-item-desc">${escapeHtml(s.phone||'无手机')}</div></div>
+        </div>
+      `).join('')}</div>
+    </div>
+  `;
+}
+
+/* ==================== 家长沟通 ==================== */
+route('/parent-comm',async()=>{
+  const content=document.getElementById('contentInner');
+  let comms=await dbGetAll('parent_communications');
+  comms.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  content.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="font-size:18px;font-weight:600">家长沟通记录</h2>
+      <button class="btn btn-primary" data-action="nav" data-path="/parent-comm/new">新增记录</button>
+    </div>
+    <div class="search-bar">
+      <input class="form-input" id="commSearch" placeholder="搜索学生姓名或内容...">
+    </div>
+    <div class="card"><div id="commList"></div></div>
+  `;
+
+  const renderList=(list)=>{
+    const el=document.getElementById('commList');
+    if(list.length===0){
+      el.innerHTML='<div class="empty-state"><div class="empty-state-icon">💬</div><div class="empty-state-text">暂无沟通记录</div></div>';
+      return;
+    }
+    el.innerHTML=list.map(c=>`
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(c.studentName||'')} <span class="badge badge-${c.type==='phone'?'info':'success'}">${c.type==='phone'?'电话':c.type==='wechat'?'微信':'面谈'}</span></div>
+          <div class="list-item-desc">${escapeHtml(c.content||'').slice(0,80)} · ${fmtDate(c.date)}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-outline" data-action="view-comm" data-id="${c.id}">查看</button>
+          <button class="btn btn-sm btn-danger" data-action="del-comm" data-id="${c.id}">删除</button>
+        </div>
+      </div>
+    `).join('');
+  };
+  renderList(comms);
+  document.getElementById('commSearch').addEventListener('input',e=>{
+    const q=e.target.value.trim().toLowerCase();
+    renderList(comms.filter(c=>(c.studentName||'').toLowerCase().includes(q)||(c.content||'').toLowerCase().includes(q)));
+  });
+});
+
+route('/parent-comm/new',async()=>{
+  const students=await dbGetAll('students');
+  const urlParams=new URLSearchParams(location.hash.split('?')[1]||'');
+  const preStudentId=urlParams.get('studentId')||'';
+
+  const imgId='commImg',fileId='commFile',imgPreviewId='commImgPreview',filePreviewId='commFilePreview';
+  const body=`
+    <div class="form-group">
+      <label class="form-label">学生 <span class="req">*</span></label>
+      <select class="form-select" id="commStudent">
+        <option value="">请选择学生</option>
+        ${students.map(s=>`<option value="${s.id}" ${preStudentId===s.id?'selected':''}>${escapeHtml(s.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">沟通方式</label>
+        <select class="form-select" id="commType">
+          <option value="phone">电话</option>
+          <option value="wechat">微信</option>
+          <option value="facetoface">面谈</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">日期</label>
+        <input class="form-input" type="date" id="commDate" value="${todayStr()}">
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">沟通内容 <span class="req">*</span></label>
+      <textarea class="form-textarea" id="commContent" placeholder="请输入沟通内容..." style="min-height:120px"></textarea>
+    </div>
+    ${fileUploadAreaHTML(imgId,fileId,imgPreviewId,filePreviewId)}
+  `;
+  const footer=`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveCommBtn">保存</button>`;
+  showModal('新增沟通记录',body,footer);
+  setupImagePreview(imgId,imgPreviewId);
+  setupFilePreview(fileId,filePreviewId);
+
+  document.getElementById('saveCommBtn').addEventListener('click',async()=>{
+    const studentId=document.getElementById('commStudent').value;
+    if(!studentId){toast('请选择学生');return}
+    const content_text=document.getElementById('commContent').value.trim();
+    if(!content_text){toast('请输入沟通内容');return}
+    const student=await dbGet('students',studentId);
+    const data={
+      id:genId(),
+      studentId,
+      studentName:student?.name||'',
+      type:document.getElementById('commType').value,
+      date:document.getElementById('commDate').value,
+      content:content_text,
+      images:_tempImages[imgId]||[],
+      documents:_tempDocuments[fileId]||[],
+      createdAt:new Date().toISOString()
+    };
+    await dbAdd('parent_communications',data);
+    closeModal();
+    toast('保存成功');
+    navigate('/parent-comm');
+  });
+});
+
+/* ==================== 学情分析 ==================== */
+route('/study',async()=>{
+  const content=document.getElementById('contentInner');
+  content.innerHTML=`
+    <div style="margin-bottom:12px"><h2 style="font-size:18px;font-weight:600">学情分析</h2></div>
+    <div class="tabs">
+      <div class="tab active" data-study-tab="records">日常记录</div>
+      <div class="tab" data-study-tab="trends">成绩趋势</div>
+      <div class="tab" data-study-tab="errors">错题分析</div>
+    </div>
+    <div id="studyTabContent"></div>
+  `;
+
+  const renderTab=async(tab)=>{
+    document.querySelectorAll('[data-study-tab]').forEach(el=>el.classList.toggle('active',el.dataset.studyTab===tab));
+    const el=document.getElementById('studyTabContent');
+    el.innerHTML='<div class="loading"><div class="spinner"></div></div>';
+    if(tab==='records'){
+      await renderStudyRecords(el);
+    }else if(tab==='trends'){
+      await renderStudyTrends(el);
+    }else if(tab==='errors'){
+      await renderErrorAnalysis(el);
+    }
+  };
+
+  document.querySelectorAll('[data-study-tab]').forEach(el=>{
+    el.addEventListener('click',()=>renderTab(el.dataset.studyTab));
+  });
+  renderTab('records');
+});
+
+async function renderStudyRecords(el){
+  const records=await dbGetAll('study_records');
+  const students=await dbGetAll('students');
+  const studentMap={};
+  students.forEach(s=>studentMap[s.id]=s.name);
+  records.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  el.innerHTML=`
+    <div style="margin-bottom:12px"><button class="btn btn-primary" data-action="add-study-record">新增记录</button></div>
+    <div class="card"><div>${records.length===0?'<div class="empty-state"><div class="empty-state-text">暂无记录</div></div>':records.map(r=>`
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(studentMap[r.studentId]||'未知')} - ${escapeHtml(r.subject||'')}</div>
+          <div class="list-item-desc">${escapeHtml(r.content||'').slice(0,60)} · ${fmtDate(r.date)}</div>
+        </div>
+        <button class="btn btn-sm btn-danger" data-action="del-study-record" data-id="${r.id}">删除</button>
+      </div>
+    `).join('')}</div></div>
+  `;
+}
+
+async function renderStudyTrends(el){
+  const records=await dbGetAll('study_records');
+  const students=await dbGetAll('students');
+  const studentMap={};
+  students.forEach(s=>studentMap[s.id]=s.name);
+  const scoreRecords=records.filter(r=>r.score!=null);
+  el.innerHTML=`
+    <div class="card">
+      <div class="card-title">成绩趋势</div>
+      ${scoreRecords.length===0?'<div class="empty-state"><div class="empty-state-text">暂无成绩数据</div></div>':`
+        <select class="form-select" id="trendStudent" style="margin-bottom:12px">
+          <option value="">全部学生</option>
+          ${students.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+        </select>
+        <div class="data-table-wrap" style="overflow-x:auto">
+          <table class="data-table">
+            <thead><tr><th>学生</th><th>科目</th><th>分数</th><th>日期</th></tr></thead>
+            <tbody>
+              ${scoreRecords.map(r=>`<tr><td>${escapeHtml(studentMap[r.studentId]||'')}</td><td>${escapeHtml(r.subject||'')}</td><td style="font-weight:600;color:${r.score>=80?'var(--success)':r.score>=60?'var(--warning)':'var(--danger)'}">${r.score}</td><td>${fmtDate(r.date)}</td></tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      `}
+    </div>
+  `;
+  const trendSel=document.getElementById('trendStudent');
+  if(trendSel)trendSel.addEventListener('change',e=>{
+    const tbody=el.querySelector('tbody');
+    const filtered=e.target.value?scoreRecords.filter(r=>r.studentId===e.target.value):scoreRecords;
+    tbody.innerHTML=filtered.map(r=>`<tr><td>${escapeHtml(studentMap[r.studentId]||'')}</td><td>${escapeHtml(r.subject||'')}</td><td style="font-weight:600;color:${r.score>=80?'var(--success)':r.score>=60?'var(--warning)':'var(--danger)'}">${r.score}</td><td>${fmtDate(r.date)}</td></tr>`).join('');
+  });
+}
+
+async function renderErrorAnalysis(el){
+  const errors=await dbGetAll('error_analysis');
+  const students=await dbGetAll('students');
+  const studentMap={};
+  students.forEach(s=>studentMap[s.id]=s.name);
+  errors.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  el.innerHTML=`
+    <div style="margin-bottom:12px"><button class="btn btn-primary" data-action="add-error">新增错题</button></div>
+    <div class="card"><div>${errors.length===0?'<div class="empty-state"><div class="empty-state-text">暂无错题</div></div>':errors.map(e=>`
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(studentMap[e.studentId]||'')} - ${escapeHtml(e.subject||'')}</div>
+          <div class="list-item-desc">${escapeHtml(e.description||'').slice(0,60)} · ${fmtDate(e.date)}</div>
+        </div>
+        <button class="btn btn-sm btn-danger" data-action="del-error" data-id="${e.id}">删除</button>
+      </div>
+    `).join('')}</div></div>
+  `;
+}
+
+/* ==================== 学习规划 ==================== */
+route('/plans',async()=>{
+  const content=document.getElementById('contentInner');
+  let plans=await dbGetAll('study_plans');
+  const students=await dbGetAll('students');
+  const studentMap={};
+  students.forEach(s=>studentMap[s.id]=s.name);
+  plans.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+
+  content.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="font-size:18px;font-weight:600">学习规划</h2>
+      <button class="btn btn-primary" data-action="nav" data-path="/plans/new">新增规划</button>
+    </div>
+    <div class="card"><div id="planList"></div></div>
+  `;
+
+  const renderList=()=>{
+    const el=document.getElementById('planList');
+    if(plans.length===0){
+      el.innerHTML='<div class="empty-state"><div class="empty-state-icon">📝</div><div class="empty-state-text">暂无学习规划</div></div>';
+      return;
+    }
+    el.innerHTML=plans.map(p=>`
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(p.title||'')} <span class="badge badge-${p.status==='done'?'success':'warning'}">${p.status==='done'?'已完成':'进行中'}</span></div>
+          <div class="list-item-desc">${escapeHtml(studentMap[p.studentId]||'')} · 截止：${fmtDate(p.deadline)}</div>
+        </div>
+        <div class="list-item-actions">
+          ${p.status!=='done'?`<button class="btn btn-sm btn-success" data-action="complete-plan" data-id="${p.id}">完成</button>`:''}
+          <button class="btn btn-sm btn-danger" data-action="del-plan" data-id="${p.id}">删除</button>
+        </div>
+      </div>
+    `).join('');
+  };
+  renderList();
+});
+
+route('/plans/new',async()=>{
+  const students=await dbGetAll('students');
+  const urlParams=new URLSearchParams(location.hash.split('?')[1]||'');
+  const preStudentId=urlParams.get('studentId')||'';
+  const imgId='planImg',fileId='planFile',imgPreviewId='planImgPreview',filePreviewId='planFilePreview';
+
+  const body=`
+    <div class="form-group">
+      <label class="form-label">学生 <span class="req">*</span></label>
+      <select class="form-select" id="planStudent">
+        <option value="">请选择学生</option>
+        ${students.map(s=>`<option value="${s.id}" ${preStudentId===s.id?'selected':''}>${escapeHtml(s.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="form-label">规划标题 <span class="req">*</span></label>
+      <input class="form-input" id="planTitle" placeholder="如：期中复习计划">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">截止日期</label>
+        <input class="form-input" type="date" id="planDeadline" value="${todayStr()}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">优先级</label>
+        <select class="form-select" id="planPriority">
+          <option value="high">高</option>
+          <option value="medium" selected>中</option>
+          <option value="low">低</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">规划内容</label>
+      <textarea class="form-textarea" id="planContent" placeholder="详细规划内容..." style="min-height:100px"></textarea>
+    </div>
+    ${fileUploadAreaHTML(imgId,fileId,imgPreviewId,filePreviewId)}
+  `;
+  const footer=`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="savePlanBtn">保存</button>`;
+  showModal('新增学习规划',body,footer);
+  setupImagePreview(imgId,imgPreviewId);
+  setupFilePreview(fileId,filePreviewId);
+
+  document.getElementById('savePlanBtn').addEventListener('click',async()=>{
+    const studentId=document.getElementById('planStudent').value;
+    if(!studentId){toast('请选择学生');return}
+    const title=document.getElementById('planTitle').value.trim();
+    if(!title){toast('请输入标题');return}
+    const data={
+      id:genId(),
+      studentId,
+      title,
+      deadline:document.getElementById('planDeadline').value,
+      priority:document.getElementById('planPriority').value,
+      content:document.getElementById('planContent').value.trim(),
+      status:'active',
+      images:_tempImages[imgId]||[],
+      documents:_tempDocuments[fileId]||[],
+      createdAt:new Date().toISOString()
+    };
+    await dbAdd('study_plans',data);
+    closeModal();
+    toast('保存成功');
+    navigate('/plans');
+  });
+});
+
+/* ==================== 新生测评 ==================== */
+route('/assessments',async()=>{
+  const content=document.getElementById('contentInner');
+  const assessments=await dbGetAll('assessments');
+  assessments.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+
+  content.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="font-size:18px;font-weight:600">新生测评</h2>
+      <button class="btn btn-primary" data-action="add-assessment">新建试卷</button>
+    </div>
+    <div class="card"><div id="assessmentList"></div></div>
+  `;
+
+  const el=document.getElementById('assessmentList');
+  if(assessments.length===0){
+    el.innerHTML='<div class="empty-state"><div class="empty-state-icon">📋</div><div class="empty-state-text">暂无测评试卷</div></div>';
+  }else{
+    const results=await dbGetAll('assessment_results');
+    el.innerHTML=assessments.map(a=>{
+      const count=results.filter(r=>r.assessmentId===a.id).length;
+      return `
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(a.title||'')}</div>
+          <div class="list-item-desc">${a.subject||''} · ${count}份答卷 · ${fmtDate(a.createdAt)}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-outline" data-action="view-assessment" data-id="${a.id}">查看</button>
+          <button class="btn btn-sm btn-danger" data-action="del-assessment" data-id="${a.id}">删除</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+});
+
+/* ==================== 发布作业 ==================== */
+route('/homework',async()=>{
+  const content=document.getElementById('contentInner');
+  const homeworks=await dbGetAll('homework');
+  const classes=await dbGetAll('classes');
+  const classMap={};
+  classes.forEach(c=>classMap[c.id]=c.name);
+  homeworks.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+
+  content.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="font-size:18px;font-weight:600">作业管理</h2>
+      <button class="btn btn-primary" data-action="nav" data-path="/homework/new">发布作业</button>
+    </div>
+    <div class="card"><div id="hwList"></div></div>
+  `;
+
+  const el=document.getElementById('hwList');
+  if(homeworks.length===0){
+    el.innerHTML='<div class="empty-state"><div class="empty-state-icon">✏️</div><div class="empty-state-text">暂无作业</div></div>';
+  }else{
+    el.innerHTML=homeworks.map(h=>`
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(h.title||'')} <span class="badge badge-${h.status==='published'?'success':'info'}">${h.status==='published'?'已发布':'草稿'}</span></div>
+          <div class="list-item-desc">${escapeHtml(classMap[h.classId]||'未关联班级')} · ${fmtDate(h.createdAt)}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-outline" data-action="view-homework" data-id="${h.id}">查看</button>
+          <button class="btn btn-sm btn-danger" data-action="del-homework" data-id="${h.id}">删除</button>
+        </div>
+      </div>
+    `).join('');
+  }
+});
+
+route('/homework/new',async()=>{
+  const classes=await dbGetAll('classes');
+  const imgId='hwImg',fileId='hwFile',imgPreviewId='hwImgPreview',filePreviewId='hwFilePreview';
+
+  const body=`
+    <div class="form-group">
+      <label class="form-label">作业标题 <span class="req">*</span></label>
+      <input class="form-input" id="hwTitle" placeholder="请输入作业标题">
+    </div>
+    <div class="form-group">
+      <label class="form-label">关联班级 <span class="req">*</span></label>
+      <select class="form-select" id="hwClass">
+        <option value="">请选择班级（必选）</option>
+        ${classes.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+      </select>
+    </div>
+    <div id="hwStudentList" style="margin-bottom:14px"></div>
+    <div class="form-group">
+      <label class="form-label">作业内容 <span class="req">*</span></label>
+      <div style="margin-bottom:8px"><button class="btn btn-sm btn-secondary" id="hwImportBtn">📄 从文件导入内容</button></div>
+      <input type="file" id="hwImportFile" accept=".txt,.doc,.docx,.xls,.xlsx,.csv" style="display:none">
+      <textarea class="form-textarea" id="hwContent" placeholder="请输入作业内容..." style="min-height:120px"></textarea>
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label">截止日期</label>
+        <input class="form-input" type="date" id="hwDeadline" value="${todayStr()}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">状态</label>
+        <select class="form-select" id="hwStatus">
+          <option value="published">立即发布</option>
+          <option value="draft">存为草稿</option>
+        </select>
+      </div>
+    </div>
+    ${fileUploadAreaHTML(imgId,fileId,imgPreviewId,filePreviewId)}
+  `;
+  const footer=`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveHwBtn">保存</button>`;
+  showModal('发布作业',body,footer);
+  setupImagePreview(imgId,imgPreviewId);
+  setupFilePreview(fileId,filePreviewId);
+
+  // 关联班级变化时显示学生列表
+  const classSel=document.getElementById('hwClass');
+  const studentListEl=document.getElementById('hwStudentList');
+  classSel.addEventListener('change',async()=>{
+    const classId=classSel.value;
+    if(!classId){studentListEl.innerHTML='';return}
+    const students=await dbQuery('students','classId',classId);
+    studentListEl.innerHTML=`
+      <div class="form-label">班级学生（${students.length}名）</div>
+      <div style="background:var(--bg-input);border-radius:var(--radius-sm);padding:8px 12px;font-size:13px;color:var(--text-secondary)">
+        ${students.map(s=>`<span class="badge badge-primary" style="margin:2px">${escapeHtml(s.name)}</span>`).join('')}
+      </div>
+    `;
+  });
+
+  // 从文件导入内容
+  const importBtn=document.getElementById('hwImportBtn');
+  const importFile=document.getElementById('hwImportFile');
+  importBtn.addEventListener('click',()=>importFile.click());
+  importFile.addEventListener('change',async()=>{
+    const file=importFile.files[0];
+    if(!file)return;
+    try{
+      const text=await file.text();
+      document.getElementById('hwContent').value=text;
+      toast('导入成功，内容可编辑');
+    }catch(err){
+      try{
+        const base64=await readFileAsBase64(file);
+        toast('文件已加载，请手动编辑内容');
+      }catch(e){
+        toast('导入失败');
+      }
+    }
+  });
+
+  document.getElementById('saveHwBtn').addEventListener('click',async()=>{
+    const title=document.getElementById('hwTitle').value.trim();
+    if(!title){toast('请输入作业标题');return}
+    const classId=document.getElementById('hwClass').value;
+    if(!classId){toast('请选择关联班级');return}
+    const content_text=document.getElementById('hwContent').value.trim();
+    if(!content_text){toast('请输入作业内容');return}
+    const data={
+      id:genId(),
+      title,
+      classId,
+      content:content_text,
+      deadline:document.getElementById('hwDeadline').value,
+      status:document.getElementById('hwStatus').value,
+      images:_tempImages[imgId]||[],
+      documents:_tempDocuments[fileId]||[],
+      createdAt:new Date().toISOString()
+    };
+    await dbAdd('homework',data);
+    // Create homework records for each student in the class
+    const students=await dbQuery('students','classId',classId);
+    for(const s of students){
+      await dbAdd('homework_records',{
+        id:genId(),
+        homeworkId:data.id,
+        studentId:s.id,
+        studentName:s.name,
+        status:'pending',
+        createdAt:new Date().toISOString()
+      });
+    }
+    closeModal();
+    toast('作业发布成功');
+    navigate('/homework');
+  });
+});
+
+/* ==================== 考勤管理 ==================== */
+route('/attendance',async()=>{
+  const content=document.getElementById('contentInner');
+  const classes=await dbGetAll('classes');
+  const allAttendance=await dbGetAll('attendance');
+  const leaveRecords=allAttendance.filter(r=>r.type==='leave').sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  const rescheduleRecords=allAttendance.filter(r=>r.type==='reschedule').sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+
+  content.innerHTML=`
+    <div style="margin-bottom:12px"><h2 style="font-size:18px;font-weight:600">考勤管理</h2></div>
+    <div class="tabs">
+      <div class="tab active" data-att-tab="checkin">签到</div>
+      <div class="tab" data-att-tab="leave">请假调课</div>
+      <div class="tab" data-att-tab="schedule">上课时间</div>
+    </div>
+    <div id="attTabContent"></div>
+  `;
+
+  /* ---- Tab: 签到 ---- */
+  function renderCheckinTab(){
+    return `
+      <div class="card">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">选择班级</label>
+            <select class="form-select" id="attClass">
+              <option value="">请选择班级</option>
+              ${classes.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">日期</label>
+            <input class="form-input" type="date" id="attDate" value="${todayStr()}">
+          </div>
+        </div>
+        <div id="attStudentList"></div>
+        <div id="attActions" style="margin-top:12px;display:none">
+          <button class="btn btn-primary btn-block" data-action="check-in-all">全部签到</button>
+          <button class="btn btn-outline btn-block" style="margin-top:8px" data-action="save-checkin">保存签到</button>
+        </div>
+      </div>
+    `;
+  }
+
+  /* ---- Tab: 请假调课 ---- */
+  function renderLeaveTab(){
+    return `
+      <div class="form-row" style="margin-bottom:12px">
+        <button class="btn btn-primary" data-action="add-leave" style="flex:1">新增请假</button>
+        <button class="btn btn-primary" data-action="add-reschedule" style="flex:1">新增调课</button>
+      </div>
+      <div class="card">
+        <div class="card-title">请假记录</div>
+        ${leaveRecords.length===0?'<div class="empty-state"><div class="empty-state-text">暂无请假记录</div></div>':leaveRecords.map(r=>`
+          <div class="list-item">
+            <div class="list-item-info">
+              <div class="list-item-title">${escapeHtml(r.studentName||'')} <span class="badge badge-warning">${r.leaveType==='sick'?'病假':r.leaveType==='personal'?'事假':'其他'}</span></div>
+              <div class="list-item-desc">${fmtDate(r.date)}${r.remark?' · '+escapeHtml(r.remark):''}</div>
+            </div>
+            <button class="btn btn-sm btn-danger" data-action="del-attendance" data-id="${r.id}">删除</button>
+          </div>
+        `).join('')}
+      </div>
+      <div class="card">
+        <div class="card-title">调课记录</div>
+        ${rescheduleRecords.length===0?'<div class="empty-state"><div class="empty-state-text">暂无调课记录</div></div>':rescheduleRecords.map(r=>`
+          <div class="list-item">
+            <div class="list-item-info">
+              <div class="list-item-title">${escapeHtml(r.studentName||'')}</div>
+              <div class="list-item-desc">${fmtDate(r.originalDate)} → ${fmtDate(r.newDate)}${r.reason?' · '+escapeHtml(r.reason):''}</div>
+            </div>
+            <button class="btn btn-sm btn-danger" data-action="del-attendance" data-id="${r.id}">删除</button>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  /* ---- Tab: 上课时间 ---- */
+  function renderScheduleTab(){
+    return `
+      ${classes.length===0?'<div class="empty-state"><div class="empty-state-text">暂无班级</div></div>':classes.map(c=>`
+        <div class="card">
+          <div class="card-title">
+            <span>${escapeHtml(c.name)}</span>
+            <button class="btn btn-sm btn-outline" data-action="edit-schedule" data-id="${c.id}">编辑</button>
+          </div>
+          <div style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+            <div><strong>科目：</strong>${escapeHtml(c.subject||'未设置')}</div>
+            <div><strong>教师：</strong>${escapeHtml(c.teacher||'未设置')}</div>
+            <div><strong>上课时间：</strong>${escapeHtml(c.schedule||'未设置')}</div>
+            <div><strong>教室：</strong>${escapeHtml(c.classroom||'未设置')}</div>
+          </div>
+        </div>
+      `).join('')}
+    `;
+  }
+
+  /* ---- Tab 渲染分发 ---- */
+  const renderTab=(tab)=>{
+    document.querySelectorAll('[data-att-tab]').forEach(el=>el.classList.toggle('active',el.dataset.attTab===tab));
+    const el=document.getElementById('attTabContent');
+    if(tab==='checkin'){
+      el.innerHTML=renderCheckinTab();
+      const classSel=document.getElementById('attClass');
+      const studentListEl=document.getElementById('attStudentList');
+      const attActions=document.getElementById('attActions');
+      const dateInput=document.getElementById('attDate');
+
+      async function renderAttStudents(){
+        const classId=classSel.value;
+        if(!classId){studentListEl.innerHTML='';attActions.style.display='none';return}
+        const students=await dbQuery('students','classId',classId);
+        const date=dateInput.value;
+        const checkedIn=await dbQuery('attendance','date',date);
+        const checkedMap={};
+        checkedIn.forEach(r=>{if(r.type==='checked-in'&&r.classId===classId)checkedMap[r.studentId]=r});
+        if(students.length===0){
+          studentListEl.innerHTML='<div class="empty-state"><div class="empty-state-text">该班级暂无学生</div></div>';
+          attActions.style.display='block';
+          return;
+        }
+        studentListEl.innerHTML=students.map(s=>{
+          const rec=checkedMap[s.id];
+          const checked=!!rec;
+          return `
+            <div class="list-item" style="padding:8px 0">
+              <div class="avatar avatar-sm" style="background:${avatarColor(s.name||'?')}">${getInitials(s.name||'?')}</div>
+              <div class="list-item-info">
+                <div class="list-item-title">${escapeHtml(s.name)}</div>
+                <div class="list-item-desc">${checked?'<span class="badge badge-success">已签到</span> '+fmtDateTime(rec.checkinTime):'未签到'}</div>
+              </div>
+              ${checked?
+                '<span class="badge badge-success">已签到</span>':
+                `<button class="btn btn-sm btn-primary" data-action="check-in" data-student-id="${s.id}" data-student-name="${escapeHtml(s.name)}">签到</button>`
+              }
+            </div>
+          `;
+        }).join('');
+        attActions.style.display='block';
+      }
+
+      classSel.addEventListener('change',renderAttStudents);
+      dateInput.addEventListener('change',renderAttStudents);
+    }else if(tab==='leave'){
+      el.innerHTML=renderLeaveTab();
+    }else if(tab==='schedule'){
+      el.innerHTML=renderScheduleTab();
+    }
+  };
+
+  document.querySelectorAll('[data-att-tab]').forEach(el=>{
+    el.addEventListener('click',()=>renderTab(el.dataset.attTab));
+  });
+  renderTab('checkin');
+});
+
+/* ==================== 积分管理 ==================== */
+route('/points',async()=>{
+  const content=document.getElementById('contentInner');
+  const students=await dbGetAll('students');
+  const pointsRecords=await dbGetAll('points_records');
+  const rewards=await dbGetAll('rewards');
+  const exchanges=await dbGetAll('exchange_records');
+
+  const pointsByStudent={};
+  pointsRecords.forEach(p=>{
+    if(!pointsByStudent[p.studentId])pointsByStudent[p.studentId]={name:p.studentName||'',total:0};
+    pointsByStudent[p.studentId].total+=p.type==='add'?p.amount:-p.amount;
+  });
+
+  content.innerHTML=`
+    <div style="margin-bottom:12px"><h2 style="font-size:18px;font-weight:600">积分管理</h2></div>
+    <div class="tabs">
+      <div class="tab active" data-points-tab="records">积分记录</div>
+      <div class="tab" data-points-tab="ranking">积分排行</div>
+      <div class="tab" data-points-tab="rewards">奖励商城</div>
+    </div>
+    <div id="pointsTabContent"></div>
+  `;
+
+  const renderTab=(tab)=>{
+    document.querySelectorAll('[data-points-tab]').forEach(el=>el.classList.toggle('active',el.dataset.pointsTab===tab));
+    const el=document.getElementById('pointsTabContent');
+    if(tab==='records'){
+      el.innerHTML=`
+        <div style="margin-bottom:12px"><button class="btn btn-primary" data-action="add-points">新增积分</button></div>
+        <div class="card"><div>${pointsRecords.length===0?'<div class="empty-state"><div class="empty-state-text">暂无积分记录</div></div>':pointsRecords.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(p=>`
+          <div class="list-item">
+            <div class="list-item-info">
+              <div class="list-item-title">${escapeHtml(p.studentName||'')} <span class="badge badge-${p.type==='add'?'success':'danger'}">${p.type==='add'?'+':'-'}${p.amount}</span></div>
+              <div class="list-item-desc">${escapeHtml(p.reason||'')} · ${fmtDate(p.date)}</div>
+            </div>
+            <button class="btn btn-sm btn-danger" data-action="del-points" data-id="${p.id}">删除</button>
+          </div>
+        `).join('')}</div></div>
+      `;
+    }else if(tab==='ranking'){
+      const sorted=Object.entries(pointsByStudent).sort((a,b)=>b[1].total-a[1].total);
+      el.innerHTML=`<div class="card"><div>${sorted.length===0?'<div class="empty-state"><div class="empty-state-text">暂无数据</div></div>':sorted.map(([id,data],i)=>`
+        <div class="list-item">
+          <div style="width:24px;text-align:center;font-weight:700;color:${i<3?'var(--warning)':'var(--text-tertiary)'}">${i+1}</div>
+          <div class="list-item-info"><div class="list-item-title">${escapeHtml(data.name)}</div></div>
+          <div class="points-display" style="font-size:18px">${data.total}</div>
+        </div>
+      `).join('')}</div></div>`;
+    }else if(tab==='rewards'){
+      el.innerHTML=`
+        <div style="margin-bottom:12px"><button class="btn btn-primary" data-action="add-reward">新增奖励</button></div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px">
+          ${rewards.length===0?'<div class="empty-state" style="grid-column:1/-1"><div class="empty-state-text">暂无奖励</div></div>':rewards.map(r=>`
+            <div class="reward-card">
+              <div class="reward-icon">${r.icon||'🎁'}</div>
+              <div class="reward-name">${escapeHtml(r.name)}</div>
+              <div class="reward-cost">${r.cost}积分</div>
+              <button class="btn btn-sm btn-primary" data-action="exchange-reward" data-id="${r.id}" data-name="${escapeHtml(r.name)}" data-cost="${r.cost}">兑换</button>
+              <button class="btn btn-sm btn-danger" data-action="del-reward" data-id="${r.id}" style="margin-top:4px">删除</button>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+  };
+
+  document.querySelectorAll('[data-points-tab]').forEach(el=>{
+    el.addEventListener('click',()=>renderTab(el.dataset.pointsTab));
+  });
+  renderTab('records');
+});
+
+/* ==================== 收费管理 ==================== */
+route('/fees',async()=>{
+  const content=document.getElementById('contentInner');
+  const fees=await dbGetAll('fees');
+  const classes=await dbGetAll('classes');
+  const classMap={};
+  classes.forEach(c=>classMap[c.id]=c.name);
+  const payments=await dbGetAll('payment_records');
+  fees.sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+
+  content.innerHTML=`
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <h2 style="font-size:18px;font-weight:600">收费管理</h2>
+      <button class="btn btn-primary" data-action="add-fee">新增收费</button>
+    </div>
+    <div class="card"><div id="feeList"></div></div>
+  `;
+
+  const el=document.getElementById('feeList');
+  if(fees.length===0){
+    el.innerHTML='<div class="empty-state"><div class="empty-state-icon">💰</div><div class="empty-state-text">暂无收费项目</div></div>';
+  }else{
+    el.innerHTML=fees.map(f=>{
+      const feePayments=payments.filter(p=>p.feeId===f.id);
+      const paid=feePayments.filter(p=>p.status==='paid').length;
+      const unpaid=feePayments.filter(p=>p.status==='unpaid').length;
+      return `
+      <div class="list-item">
+        <div class="list-item-info">
+          <div class="list-item-title">${escapeHtml(f.name||'')} <span class="badge badge-warning">¥${f.amount}</span></div>
+          <div class="list-item-desc">${escapeHtml(classMap[f.classId]||'全部')} · 截止：${fmtDate(f.dueDate)} · 已缴${paid} 待缴${unpaid}</div>
+        </div>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-outline" data-action="view-fee" data-id="${f.id}">查看</button>
+          <button class="btn btn-sm btn-danger" data-action="del-fee" data-id="${f.id}">删除</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+});
+
+/* ==================== 设置页 ==================== */
+route('/settings',async()=>{
+  const content=document.getElementById('contentInner');
+  const stores=Object.keys(STORE_DEFS);
+  const counts={};
+  for(const s of stores){
+    counts[s]=await dbCount(s);
+  }
+  const totalRecords=Object.values(counts).reduce((a,b)=>a+b,0);
+
+  content.innerHTML=`
+    <div style="margin-bottom:12px"><h2 style="font-size:18px;font-weight:600">设置</h2></div>
+    <div class="card">
+      <div class="card-title">数据管理</div>
+      <div style="margin-bottom:12px;padding:12px;background:var(--primary-bg);border-radius:var(--radius-sm);font-size:13px">
+        <div style="font-weight:600;margin-bottom:4px">数据统计</div>
+        <div style="color:var(--text-secondary)">总记录数：${totalRecords}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn btn-primary" data-action="export-data">📤 导出全部数据</button>
+        <button class="btn btn-secondary" data-action="import-data">📥 导入数据</button>
+        <input type="file" id="importFileInput" accept=".json" style="display:none">
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">各数据表记录数</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;font-size:13px">
+        ${stores.map(s=>`<div style="display:flex;justify-content:space-between;padding:4px 0"><span style="color:var(--text-secondary)">${s}</span><span style="font-weight:600">${counts[s]}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-title">关于</div>
+      <div style="font-size:13px;color:var(--text-secondary);line-height:1.8">
+        <div>Mia教务管理工作台 v1.0</div>
+        <div>数据存储：IndexedDB（本地）</div>
+        <div>所有数据保存在浏览器本地，请定期导出备份</div>
+      </div>
+    </div>
+  `;
+});
+
+/* ==================== 全局事件处理 ==================== */
+document.addEventListener('click',async e=>{
+  const target=e.target.closest('[data-action]');
+  if(!target)return;
+  const action=target.dataset.action;
+
+  switch(action){
+    case 'close-modal':
+      closeModal();
+      break;
+
+    case 'toggle-sidebar':{
+      const sb=document.getElementById('sidebar');
+      if(sb.classList.contains('open'))closeDrawer();else openDrawer();
+      break;
+    }
+
+    case 'go-settings':
+      navigate('/settings');
+      break;
+
+    case 'nav':{
+      e.stopPropagation();
+      const path=target.dataset.path;
+      if(path)navigate(path);
+      break;
+    }
+
+    case 'edit-student':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      await renderStudentForm(id);
+      break;
+    }
+
+    case 'del-student':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除学生','确定要删除该学生吗？删除后不可恢复。',async()=>{
+        await dbDel('students',id);
+        toast('删除成功');
+        navigate('/students');
+      });
+      break;
+    }
+
+    case 'edit-class':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      await renderClassForm(id);
+      break;
+    }
+
+    case 'del-class':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除班级','确定要删除该班级吗？',async()=>{
+        await dbDel('classes',id);
+        toast('删除成功');
+        navigate('/classes');
+      });
+      break;
+    }
+
+    case 'del-comm':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除记录','确定要删除该沟通记录吗？',async()=>{
+        await dbDel('parent_communications',id);
+        toast('删除成功');
+        navigate('/parent-comm');
+      });
+      break;
+    }
+
+    case 'view-comm':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const comm=await dbGet('parent_communications',id);
+      if(!comm)return;
+      let body=`<div style="margin-bottom:12px"><strong>学生：</strong>${escapeHtml(comm.studentName||'')}</div>`;
+      body+=`<div style="margin-bottom:12px"><strong>方式：</strong>${comm.type==='phone'?'电话':comm.type==='wechat'?'微信':'面谈'}</div>`;
+      body+=`<div style="margin-bottom:12px"><strong>日期：</strong>${fmtDate(comm.date)}</div>`;
+      body+=`<div style="margin-bottom:12px"><strong>内容：</strong><br>${escapeHtml(comm.content||'')}</div>`;
+      if(comm.images&&comm.images.length){
+        body+=`<div style="margin-bottom:8px"><strong>图片：</strong></div><div class="file-preview">${comm.images.map(img=>`<img class="image-thumb" src="${img.data}">`).join('')}</div>`;
+      }
+      if(comm.documents&&comm.documents.length){
+        body+=`<div style="margin-top:8px;margin-bottom:8px"><strong>文档：</strong></div>${comm.documents.map(d=>`<div class="file-tag">📄 ${escapeHtml(d.name)}</div>`).join(' ')}`;
+      }
+      showModal('沟通记录详情',body,`<button class="btn btn-outline" data-action="close-modal">关闭</button>`);
+      break;
+    }
+
+    case 'add-study-record':{
+      const students=await dbGetAll('students');
+      const body=`
+        <div class="form-group">
+          <label class="form-label">学生 <span class="req">*</span></label>
+          <select class="form-select" id="srStudent">
+            <option value="">请选择</option>
+            ${students.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">科目</label>
+            <input class="form-input" id="srSubject" placeholder="如：数学">
+          </div>
+          <div class="form-group">
+            <label class="form-label">分数（可选）</label>
+            <input class="form-input" type="number" id="srScore" placeholder="0-100">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">日期</label>
+          <input class="form-input" type="date" id="srDate" value="${todayStr()}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">记录内容</label>
+          <textarea class="form-textarea" id="srContent" placeholder="学习情况记录..."></textarea>
+        </div>
+      `;
+      showModal('新增学情记录',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveSrBtn">保存</button>`);
+      document.getElementById('saveSrBtn').addEventListener('click',async()=>{
+        const studentId=document.getElementById('srStudent').value;
+        if(!studentId){toast('请选择学生');return}
+        const student=await dbGet('students',studentId);
+        const scoreVal=document.getElementById('srScore').value;
+        await dbAdd('study_records',{
+          id:genId(),
+          studentId,
+          studentName:student?.name||'',
+          subject:document.getElementById('srSubject').value.trim(),
+          score:scoreVal?Number(scoreVal):null,
+          date:document.getElementById('srDate').value,
+          content:document.getElementById('srContent').value.trim(),
+          createdAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('保存成功');
+        navigate('/study');
+      });
+      break;
+    }
+
+    case 'del-study-record':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除记录','确定删除该学情记录？',async()=>{
+        await dbDel('study_records',id);
+        toast('删除成功');
+        navigate('/study');
+      });
+      break;
+    }
+
+    case 'add-error':{
+      const students=await dbGetAll('students');
+      const body=`
+        <div class="form-group">
+          <label class="form-label">学生 <span class="req">*</span></label>
+          <select class="form-select" id="erStudent">
+            <option value="">请选择</option>
+            ${students.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">科目</label>
+          <input class="form-input" id="erSubject" placeholder="如：数学">
+        </div>
+        <div class="form-group">
+          <label class="form-label">错题描述 <span class="req">*</span></label>
+          <textarea class="form-textarea" id="erDesc" placeholder="错题内容..."></textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">日期</label>
+          <input class="form-input" type="date" id="erDate" value="${todayStr()}">
+        </div>
+      `;
+      showModal('新增错题',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveErrBtn">保存</button>`);
+      document.getElementById('saveErrBtn').addEventListener('click',async()=>{
+        const studentId=document.getElementById('erStudent').value;
+        if(!studentId){toast('请选择学生');return}
+        const desc=document.getElementById('erDesc').value.trim();
+        if(!desc){toast('请输入错题描述');return}
+        const student=await dbGet('students',studentId);
+        await dbAdd('error_analysis',{
+          id:genId(),
+          studentId,
+          studentName:student?.name||'',
+          subject:document.getElementById('erSubject').value.trim(),
+          description:desc,
+          date:document.getElementById('erDate').value,
+          createdAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('保存成功');
+        navigate('/study');
+      });
+      break;
+    }
+
+    case 'del-error':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除错题','确定删除该错题记录？',async()=>{
+        await dbDel('error_analysis',id);
+        toast('删除成功');
+        navigate('/study');
+      });
+      break;
+    }
+
+    case 'complete-plan':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const plan=await dbGet('study_plans',id);
+      if(plan){plan.status='done';plan.updatedAt=new Date().toISOString();await dbPut('study_plans',plan);toast('已标记完成');navigate('/plans')}
+      break;
+    }
+
+    case 'del-plan':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除规划','确定删除该学习规划？',async()=>{
+        await dbDel('study_plans',id);
+        toast('删除成功');
+        navigate('/plans');
+      });
+      break;
+    }
+
+    case 'add-assessment':{
+      const imgId='asImg',fileId='asFile',imgPreviewId='asImgPreview',filePreviewId='asFilePreview';
+      const body=`
+        <div class="form-group">
+          <label class="form-label">试卷标题 <span class="req">*</span></label>
+          <input class="form-input" id="asTitle" placeholder="如：新生入学测评卷">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">科目</label>
+            <input class="form-input" id="asSubject" placeholder="如：数学">
+          </div>
+          <div class="form-group">
+            <label class="form-label">总分</label>
+            <input class="form-input" type="number" id="asTotalScore" value="100">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">试卷内容</label>
+          <textarea class="form-textarea" id="asContent" placeholder="试卷题目内容..." style="min-height:120px"></textarea>
+        </div>
+        ${fileUploadAreaHTML(imgId,fileId,imgPreviewId,filePreviewId)}
+      `;
+      showModal('新建试卷',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveAsBtn">保存</button>`);
+      setupImagePreview(imgId,imgPreviewId);
+      setupFilePreview(fileId,filePreviewId);
+      document.getElementById('saveAsBtn').addEventListener('click',async()=>{
+        const title=document.getElementById('asTitle').value.trim();
+        if(!title){toast('请输入标题');return}
+        await dbAdd('assessments',{
+          id:genId(),
+          title,
+          subject:document.getElementById('asSubject').value.trim(),
+          totalScore:Number(document.getElementById('asTotalScore').value)||100,
+          content:document.getElementById('asContent').value.trim(),
+          images:_tempImages[imgId]||[],
+          documents:_tempDocuments[fileId]||[],
+          createdAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('保存成功');
+        navigate('/assessments');
+      });
+      break;
+    }
+
+    case 'view-assessment':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const a=await dbGet('assessments',id);
+      if(!a)return;
+      const results=await dbQuery('assessment_results','assessmentId',id);
+      let body=`<div style="margin-bottom:12px"><strong>科目：</strong>${escapeHtml(a.subject||'')}</div>`;
+      body+=`<div style="margin-bottom:12px"><strong>总分：</strong>${a.totalScore||100}</div>`;
+      body+=`<div style="margin-bottom:12px"><strong>内容：</strong><br>${escapeHtml(a.content||'')}</div>`;
+      if(results.length){
+        body+=`<div style="margin-top:16px;border-top:1px solid var(--border-light);padding-top:12px"><strong>测评结果：</strong></div>`;
+        body+=results.map(r=>`<div class="list-item"><div class="list-item-info"><div class="list-item-title">${escapeHtml(r.studentName||'')}</div><div class="list-item-desc">得分：${r.score||'-'} · ${fmtDate(r.date)}</div></div></div>`).join('');
+      }
+      showModal('试卷详情',body,`<button class="btn btn-outline" data-action="close-modal">关闭</button>`);
+      break;
+    }
+
+    case 'del-assessment':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除试卷','确定删除该试卷？',async()=>{
+        await dbDel('assessments',id);
+        toast('删除成功');
+        navigate('/assessments');
+      });
+      break;
+    }
+
+    case 'view-homework':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const h=await dbGet('homework',id);
+      if(!h)return;
+      const classes=await dbGetAll('classes');
+      const cls=classes.find(c=>c.id===h.classId);
+      const records=await dbQuery('homework_records','homeworkId',id);
+      let body=`<div style="margin-bottom:12px"><strong>班级：</strong>${escapeHtml(cls?.name||'')}</div>`;
+      body+=`<div style="margin-bottom:12px"><strong>截止：</strong>${fmtDate(h.deadline)}</div>`;
+      body+=`<div style="margin-bottom:12px"><strong>内容：</strong><br>${escapeHtml(h.content||'')}</div>`;
+      if(records.length){
+        body+=`<div style="margin-top:16px;border-top:1px solid var(--border-light);padding-top:12px"><strong>提交情况（${records.length}）：</strong></div>`;
+        body+=records.map(r=>`<div class="list-item"><div class="list-item-info"><div class="list-item-title">${escapeHtml(r.studentName||'')}</div><div class="list-item-desc"><span class="badge badge-${r.status==='submitted'?'success':r.status==='graded'?'info':'warning'}">${r.status==='submitted'?'已提交':r.status==='graded'?'已批改':'待提交'}</span></div></div></div>`).join('');
+      }
+      showModal('作业详情',body,`<button class="btn btn-outline" data-action="close-modal">关闭</button>`);
+      break;
+    }
+
+    case 'del-homework':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除作业','确定删除该作业？',async()=>{
+        await dbDel('homework',id);
+        const records=await dbQuery('homework_records','homeworkId',id);
+        for(const r of records)await dbDel('homework_records',r.id);
+        toast('删除成功');
+        navigate('/homework');
+      });
+      break;
+    }
+
+    case 'check-in':{
+      e.stopPropagation();
+      const studentId=target.dataset.studentId;
+      const studentName=target.dataset.studentName;
+      const classId=document.getElementById('attClass').value;
+      const date=document.getElementById('attDate').value;
+      if(!classId){toast('请选择班级');break}
+      await dbAdd('attendance',{
+        id:genId(),
+        classId,
+        studentId,
+        studentName,
+        type:'checked-in',
+        status:'checked-in',
+        date,
+        checkinTime:new Date().toISOString(),
+        createdAt:new Date().toISOString()
+      });
+      toast('签到成功');
+      navigate('/attendance');
+      break;
+    }
+
+    case 'check-in-all':{
+      e.stopPropagation();
+      const classId=document.getElementById('attClass').value;
+      const date=document.getElementById('attDate').value;
+      if(!classId){toast('请选择班级');break}
+      const students=await dbQuery('students','classId',classId);
+      if(students.length===0){toast('该班级暂无学生');break}
+      const existing=await dbQuery('attendance','date',date);
+      const existingSet=new Set(existing.filter(r=>r.type==='checked-in'&&r.classId===classId).map(r=>r.studentId));
+      const toCheckin=students.filter(s=>!existingSet.has(s.id));
+      if(toCheckin.length===0){toast('该班级学生均已签到');break}
+      const now=new Date().toISOString();
+      for(const s of toCheckin){
+        await dbAdd('attendance',{
+          id:genId(),
+          classId,
+          studentId:s.id,
+          studentName:s.name,
+          type:'checked-in',
+          status:'checked-in',
+          date,
+          checkinTime:now,
+          createdAt:now
+        });
+      }
+      toast(`全部签到成功（${toCheckin.length}人）`);
+      navigate('/attendance');
+      break;
+    }
+
+    case 'save-checkin':{
+      e.stopPropagation();
+      toast('签到已保存');
+      navigate('/attendance');
+      break;
+    }
+
+    case 'add-leave':{
+      const classes=await dbGetAll('classes');
+      const allStudents=await dbGetAll('students');
+      const body=`
+        <div class="form-group">
+          <label class="form-label">选择班级</label>
+          <select class="form-select" id="lvClass">
+            <option value="">全部学生</option>
+            ${classes.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">学生 <span class="req">*</span></label>
+          <select class="form-select" id="lvStudent">
+            <option value="">请选择</option>
+            ${allStudents.map(s=>`<option value="${s.id}" data-name="${escapeHtml(s.name)}" data-class-id="${s.classId||''}">${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">请假类型</label>
+            <select class="form-select" id="lvType">
+              <option value="sick">病假</option>
+              <option value="personal">事假</option>
+              <option value="other">其他</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">请假日期</label>
+            <input class="form-input" type="date" id="lvDate" value="${todayStr()}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" id="lvRemark" placeholder="请假说明..."></textarea>
+        </div>
+      `;
+      showModal('新增请假',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveLeaveBtn">保存</button>`);
+      const lvClassSel=document.getElementById('lvClass');
+      const lvStudentSel=document.getElementById('lvStudent');
+      lvClassSel.addEventListener('change',()=>{
+        const cid=lvClassSel.value;
+        [...lvStudentSel.options].forEach(opt=>{
+          if(opt.value==='')return;
+          opt.hidden=!!cid&&opt.dataset.classId!==cid;
+        });
+      });
+      document.getElementById('saveLeaveBtn').addEventListener('click',async()=>{
+        const studentId=lvStudentSel.value;
+        if(!studentId){toast('请选择学生');return}
+        const student=await dbGet('students',studentId);
+        await dbAdd('attendance',{
+          id:genId(),
+          classId:student?.classId||'',
+          studentId,
+          studentName:student?.name||'',
+          type:'leave',
+          leaveType:document.getElementById('lvType').value,
+          date:document.getElementById('lvDate').value,
+          remark:document.getElementById('lvRemark').value.trim(),
+          createdAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('请假记录已保存');
+        navigate('/attendance');
+      });
+      break;
+    }
+
+    case 'add-reschedule':{
+      const classes=await dbGetAll('classes');
+      const allStudents=await dbGetAll('students');
+      const body=`
+        <div class="form-group">
+          <label class="form-label">选择班级</label>
+          <select class="form-select" id="rsClass">
+            <option value="">全部学生</option>
+            ${classes.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">学生 <span class="req">*</span></label>
+          <select class="form-select" id="rsStudent">
+            <option value="">请选择</option>
+            ${allStudents.map(s=>`<option value="${s.id}" data-name="${escapeHtml(s.name)}" data-class-id="${s.classId||''}">${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">原上课时间</label>
+            <input class="form-input" type="date" id="rsOriginalDate" value="${todayStr()}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">调至时间</label>
+            <input class="form-input" type="date" id="rsNewDate" value="${todayStr()}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">调课原因</label>
+          <textarea class="form-textarea" id="rsReason" placeholder="调课原因..."></textarea>
+        </div>
+      `;
+      showModal('新增调课',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveRescheduleBtn">保存</button>`);
+      const rsClassSel=document.getElementById('rsClass');
+      const rsStudentSel=document.getElementById('rsStudent');
+      rsClassSel.addEventListener('change',()=>{
+        const cid=rsClassSel.value;
+        [...rsStudentSel.options].forEach(opt=>{
+          if(opt.value==='')return;
+          opt.hidden=!!cid&&opt.dataset.classId!==cid;
+        });
+      });
+      document.getElementById('saveRescheduleBtn').addEventListener('click',async()=>{
+        const studentId=rsStudentSel.value;
+        if(!studentId){toast('请选择学生');return}
+        const student=await dbGet('students',studentId);
+        await dbAdd('attendance',{
+          id:genId(),
+          classId:student?.classId||'',
+          studentId,
+          studentName:student?.name||'',
+          type:'reschedule',
+          originalDate:document.getElementById('rsOriginalDate').value,
+          newDate:document.getElementById('rsNewDate').value,
+          reason:document.getElementById('rsReason').value.trim(),
+          createdAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('调课记录已保存');
+        navigate('/attendance');
+      });
+      break;
+    }
+
+    case 'edit-schedule':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const cls=await dbGet('classes',id);
+      if(!cls)break;
+      const body=`
+        <div class="form-group">
+          <label class="form-label">班级名称</label>
+          <input class="form-input" id="scName" value="${escapeHtml(cls.name||'')}" disabled>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">科目</label>
+            <input class="form-input" id="scSubject" value="${escapeHtml(cls.subject||'')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">教师</label>
+            <input class="form-input" id="scTeacher" value="${escapeHtml(cls.teacher||'')}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">上课时间</label>
+          <input class="form-input" id="scSchedule" value="${escapeHtml(cls.schedule||'')}" placeholder="如：周一 10:00-12:00">
+        </div>
+        <div class="form-group">
+          <label class="form-label">教室</label>
+          <input class="form-input" id="scClassroom" value="${escapeHtml(cls.classroom||'')}" placeholder="如：A301">
+        </div>
+      `;
+      showModal('编辑上课时间',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveScheduleBtn">保存</button>`);
+      document.getElementById('saveScheduleBtn').addEventListener('click',async()=>{
+        cls.subject=document.getElementById('scSubject').value.trim();
+        cls.teacher=document.getElementById('scTeacher').value.trim();
+        cls.schedule=document.getElementById('scSchedule').value.trim();
+        cls.classroom=document.getElementById('scClassroom').value.trim();
+        cls.updatedAt=new Date().toISOString();
+        await dbPut('classes',cls);
+        closeModal();
+        toast('上课时间已更新');
+        navigate('/attendance');
+      });
+      break;
+    }
+
+    case 'del-attendance':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除记录','确定删除该考勤记录？',async()=>{
+        await dbDel('attendance',id);
+        toast('删除成功');
+        navigate('/attendance');
+      });
+      break;
+    }
+
+    case 'add-points':{
+      const students=await dbGetAll('students');
+      const body=`
+        <div class="form-group">
+          <label class="form-label">学生 <span class="req">*</span></label>
+          <select class="form-select" id="ptStudent">
+            <option value="">请选择</option>
+            ${students.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">类型</label>
+            <select class="form-select" id="ptType">
+              <option value="add">加分</option>
+              <option value="deduct">扣分</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">积分</label>
+            <input class="form-input" type="number" id="ptAmount" value="1" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">原因</label>
+          <input class="form-input" id="ptReason" placeholder="如：课堂积极/作业优秀">
+        </div>
+        <div class="form-group">
+          <label class="form-label">日期</label>
+          <input class="form-input" type="date" id="ptDate" value="${todayStr()}">
+        </div>
+      `;
+      showModal('新增积分',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="savePtBtn">保存</button>`);
+      document.getElementById('savePtBtn').addEventListener('click',async()=>{
+        const studentId=document.getElementById('ptStudent').value;
+        if(!studentId){toast('请选择学生');return}
+        const student=await dbGet('students',studentId);
+        await dbAdd('points_records',{
+          id:genId(),
+          studentId,
+          studentName:student?.name||'',
+          type:document.getElementById('ptType').value,
+          amount:Number(document.getElementById('ptAmount').value)||1,
+          reason:document.getElementById('ptReason').value.trim(),
+          date:document.getElementById('ptDate').value,
+          createdAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('保存成功');
+        navigate('/points');
+      });
+      break;
+    }
+
+    case 'del-points':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除积分','确定删除该积分记录？',async()=>{
+        await dbDel('points_records',id);
+        toast('删除成功');
+        navigate('/points');
+      });
+      break;
+    }
+
+    case 'add-reward':{
+      const body=`
+        <div class="form-group">
+          <label class="form-label">奖励名称 <span class="req">*</span></label>
+          <input class="form-input" id="rwName" placeholder="如：小文具">
+        </div>
+        <div class="form-group">
+          <label class="form-label">图标</label>
+          <input class="form-input" id="rwIcon" value="🎁" placeholder="emoji图标">
+        </div>
+        <div class="form-group">
+          <label class="form-label">所需积分 <span class="req">*</span></label>
+          <input class="form-input" type="number" id="rwCost" value="10" min="1">
+        </div>
+      `;
+      showModal('新增奖励',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveRwBtn">保存</button>`);
+      document.getElementById('saveRwBtn').addEventListener('click',async()=>{
+        const name=document.getElementById('rwName').value.trim();
+        if(!name){toast('请输入奖励名称');return}
+        await dbAdd('rewards',{
+          id:genId(),
+          name,
+          icon:document.getElementById('rwIcon').value.trim()||'🎁',
+          cost:Number(document.getElementById('rwCost').value)||10,
+          active:true,
+          createdAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('保存成功');
+        navigate('/points');
+      });
+      break;
+    }
+
+    case 'del-reward':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除奖励','确定删除该奖励？',async()=>{
+        await dbDel('rewards',id);
+        toast('删除成功');
+        navigate('/points');
+      });
+      break;
+    }
+
+    case 'exchange-reward':{
+      e.stopPropagation();
+      const rewardId=target.dataset.id;
+      const rewardName=target.dataset.name;
+      const cost=Number(target.dataset.cost);
+      const students=await dbGetAll('students');
+      const body=`
+        <div style="margin-bottom:12px;padding:12px;background:var(--primary-bg);border-radius:var(--radius-sm)">
+          <div style="font-weight:600">${escapeHtml(rewardName)}</div>
+          <div style="color:var(--warning);font-weight:600">需要 ${cost} 积分</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">选择学生 <span class="req">*</span></label>
+          <select class="form-select" id="exStudent">
+            <option value="">请选择</option>
+            ${students.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </div>
+      `;
+      showModal('兑换奖励',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="confirmExBtn">确认兑换</button>`);
+      document.getElementById('confirmExBtn').addEventListener('click',async()=>{
+        const studentId=document.getElementById('exStudent').value;
+        if(!studentId){toast('请选择学生');return}
+        const student=await dbGet('students',studentId);
+        const points=await dbQuery('points_records','studentId',studentId);
+        const total=points.reduce((sum,p)=>sum+(p.type==='add'?p.amount:-p.amount),0);
+        if(total<cost){toast('积分不足！当前积分：'+total);return}
+        await dbAdd('points_records',{
+          id:genId(),
+          studentId,
+          studentName:student?.name||'',
+          type:'deduct',
+          amount:cost,
+          reason:'兑换：'+rewardName,
+          date:todayStr(),
+          createdAt:new Date().toISOString()
+        });
+        await dbAdd('exchange_records',{
+          id:genId(),
+          studentId,
+          studentName:student?.name||'',
+          rewardId,
+          rewardName,
+          cost,
+          date:todayStr(),
+          createdAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('兑换成功！');
+        navigate('/points');
+      });
+      break;
+    }
+
+    case 'add-fee':{
+      const classes=await dbGetAll('classes');
+      const body=`
+        <div class="form-group">
+          <label class="form-label">收费名称 <span class="req">*</span></label>
+          <input class="form-input" id="feeName" placeholder="如：秋季学费">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">金额 <span class="req">*</span></label>
+            <input class="form-input" type="number" id="feeAmount" value="0" min="0">
+          </div>
+          <div class="form-group">
+            <label class="form-label">截止日期</label>
+            <input class="form-input" type="date" id="feeDueDate" value="${todayStr()}">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">关联班级</label>
+          <select class="form-select" id="feeClass">
+            <option value="">全部班级</option>
+            ${classes.map(c=>`<option value="${c.id}">${escapeHtml(c.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">备注</label>
+          <textarea class="form-textarea" id="feeRemark" placeholder="收费说明..."></textarea>
+        </div>
+      `;
+      showModal('新增收费',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveFeeBtn">保存</button>`);
+      document.getElementById('saveFeeBtn').addEventListener('click',async()=>{
+        const name=document.getElementById('feeName').value.trim();
+        if(!name){toast('请输入收费名称');return}
+        const amount=Number(document.getElementById('feeAmount').value);
+        if(!amount||amount<=0){toast('请输入有效金额');return}
+        const classId=document.getElementById('feeClass').value;
+        const feeId=genId();
+        await dbAdd('fees',{
+          id:feeId,
+          name,
+          amount,
+          dueDate:document.getElementById('feeDueDate').value,
+          classId,
+          remark:document.getElementById('feeRemark').value.trim(),
+          createdAt:new Date().toISOString()
+        });
+        const students=classId?await dbQuery('students','classId',classId):await dbGetAll('students');
+        for(const s of students){
+          await dbAdd('payment_records',{
+            id:genId(),
+            feeId,
+            feeName:name,
+            studentId:s.id,
+            studentName:s.name,
+            amount,
+            status:'unpaid',
+            createdAt:new Date().toISOString()
+          });
+        }
+        closeModal();
+        toast('保存成功');
+        navigate('/fees');
+      });
+      break;
+    }
+
+    case 'view-fee':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const fee=await dbGet('fees',id);
+      if(!fee)return;
+      const payments=await dbQuery('payment_records','feeId',id);
+      let body=`<div style="margin-bottom:12px"><strong>金额：</strong>¥${fee.amount}</div>`;
+      body+=`<div style="margin-bottom:12px"><strong>截止：</strong>${fmtDate(fee.dueDate)}</div>`;
+      if(fee.remark)body+=`<div style="margin-bottom:12px"><strong>备注：</strong>${escapeHtml(fee.remark)}</div>`;
+      body+=`<div style="margin-top:16px;border-top:1px solid var(--border-light);padding-top:12px"><strong>缴费记录（${payments.length}）：</strong></div>`;
+      body+=payments.map(p=>`
+        <div class="list-item">
+          <div class="list-item-info">
+            <div class="list-item-title">${escapeHtml(p.studentName||'')}</div>
+            <div class="list-item-desc"><span class="badge badge-${p.status==='paid'?'success':'danger'}">${p.status==='paid'?'已缴':'待缴'}</span></div>
+          </div>
+          ${p.status!=='paid'?`<button class="btn btn-sm btn-success" data-action="mark-paid" data-id="${p.id}">标记已缴</button>`:''}
+        </div>
+      `).join('');
+      showModal('收费详情',body,`<button class="btn btn-outline" data-action="close-modal">关闭</button>`);
+      break;
+    }
+
+    case 'mark-paid':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const payment=await dbGet('payment_records',id);
+      if(payment){
+        payment.status='paid';
+        payment.paidAt=new Date().toISOString();
+        await dbPut('payment_records',payment);
+        toast('已标记缴费');
+        closeModal();
+        const feeEl=document.querySelector('[data-action="view-fee"]');
+        if(feeEl)feeEl.click();
+      }
+      break;
+    }
+
+    case 'del-fee':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      confirmDialog('删除收费','确定删除该收费项目及相关缴费记录？',async()=>{
+        await dbDel('fees',id);
+        const payments=await dbQuery('payment_records','feeId',id);
+        for(const p of payments)await dbDel('payment_records',p.id);
+        toast('删除成功');
+        navigate('/fees');
+      });
+      break;
+    }
+
+    case 'export-data':{
+      const data={};
+      for(const storeName of Object.keys(STORE_DEFS)){
+        data[storeName]=await dbGetAll(storeName);
+      }
+      const json=JSON.stringify(data,null,2);
+      const blob=new Blob([json],{type:'application/json'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');
+      a.href=url;
+      a.download='mia_edu_backup_'+todayStr()+'.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      toast('导出成功');
+      break;
+    }
+
+    case 'import-data':{
+      document.getElementById('importFileInput').click();
+      break;
+    }
+  }
+});
+
+// Handle import file change
+document.addEventListener('change',async e=>{
+  if(e.target.id==='importFileInput'){
+    const file=e.target.files[0];
+    if(!file)return;
+    try{
+      const text=await file.text();
+      const data=JSON.parse(text);
+      confirmDialog('导入数据','确定要导入数据吗？这将覆盖现有同ID记录。',async()=>{
+        for(const [storeName,records] of Object.entries(data)){
+          if(!STORE_DEFS[storeName])continue;
+          for(const record of records){
+            await dbPut(storeName,record);
+          }
+        }
+        toast('导入成功');
+        navigate('/settings');
+      });
+    }catch(err){
+      toast('导入失败：'+err.message);
+    }
+    e.target.value='';
+  }
+});
+
+/* ==================== 初始化 ==================== */
+async function init(){
+  renderSidebar();
+  document.getElementById('sidebarOverlay').addEventListener('click',closeDrawer);
+  await openDB();
+
+  // Add some default rewards if empty
+  const rewardCount=await dbCount('rewards');
+  if(rewardCount===0){
+    const defaultRewards=[
+      {id:genId(),name:'小贴纸',icon:'⭐',cost:5,active:true,createdAt:new Date().toISOString()},
+      {id:genId(),name:'小文具',icon:'🖊️',cost:15,active:true,createdAt:new Date().toISOString()},
+      {id:genId(),name:'课外书',icon:'📖',cost:50,active:true,createdAt:new Date().toISOString()},
+      {id:genId(),name:'免作业一次',icon:'🎫',cost:30,active:true,createdAt:new Date().toISOString()}
+    ];
+    for(const r of defaultRewards)await dbAdd('rewards',r);
+  }
+
+  handleRoute();
+}
+
+init();
+</script>
+</body>
+</html>
