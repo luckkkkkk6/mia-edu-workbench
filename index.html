@@ -209,6 +209,94 @@ a{text-decoration:none;color:inherit}
 </style>
 </head>
 <body>
+<style>
+#eduGate{position:fixed;inset:0;z-index:2147483646;display:flex;align-items:center;justify-content:center;background:linear-gradient(160deg,#e8edfb 0%,#f6f8fc 100%);font-family:system-ui,-apple-system,'PingFang SC','Microsoft YaHei',sans-serif}
+#eduGate *{box-sizing:border-box}
+#eduGate .gate-card{width:min(92vw,380px);background:#fff;border-radius:20px;box-shadow:0 18px 50px rgba(30,50,120,.14);padding:36px 28px 26px;text-align:center}
+#eduGate .gate-badge{display:inline-block;font-size:12px;font-weight:600;letter-spacing:1px;color:#4f6ef7;background:#eef1fe;border:1px solid #dde4fc;border-radius:999px;padding:4px 14px;margin-bottom:18px}
+#eduGate .gate-title{font-size:20px;font-weight:700;color:#1f2430;margin:0 0 6px}
+#eduGate .gate-sub{font-size:13px;color:#8a92a6;margin:0 0 24px}
+#eduGate .gate-input{width:100%;height:48px;border:1.5px solid #d8deee;border-radius:12px;padding:0 16px;font-size:16px;color:#1f2430;outline:none;background:#fbfcff;transition:border-color .2s}
+#eduGate .gate-input:focus{border-color:#4f6ef7;background:#fff}
+#eduGate .gate-btn{width:100%;height:48px;border:none;border-radius:12px;background:linear-gradient(135deg,#4f6ef7,#6a5af9);color:#fff;font-size:16px;font-weight:600;cursor:pointer;margin-top:14px;transition:opacity .2s}
+#eduGate .gate-btn:disabled{opacity:.55;cursor:default}
+#eduGate .gate-btn:active:not(:disabled){opacity:.85}
+#eduGate .gate-row{display:flex;align-items:center;justify-content:space-between;margin-top:14px;font-size:12px;color:#8a92a6}
+#eduGate .gate-row label{display:flex;align-items:center;gap:6px;cursor:pointer}
+#eduGate .gate-err{display:none;color:#e34d4d;font-size:13px;margin-top:12px}
+#eduGate .gate-foot{font-size:11px;color:#b3bac9;margin-top:20px}
+</style>
+<div id="eduGate">
+  <div class="gate-card">
+    <div class="gate-badge">MIA EDU WORKBENCH</div>
+    <h2 class="gate-title">请输入访问密码</h2>
+    <p class="gate-sub">此工作台仅限授权教师使用</p>
+    <input id="eduPass" class="gate-input" type="password" placeholder="访问密码" autocomplete="off" autocapitalize="off">
+    <button id="eduBtn" class="gate-btn" type="button">进入工作台</button>
+    <div class="gate-row">
+      <label><input id="eduRem" type="checkbox" checked> 7 天内免登录</label>
+      <span>忘记密码请联系管理员</span>
+    </div>
+    <div id="eduErr" class="gate-err">密码错误，请重新输入</div>
+    <div class="gate-foot">Mia 教务工作台 · 访问受保护</div>
+  </div>
+</div>
+<script>
+(function(){
+  var HASH='9fdcf011b99bd99d6fb3793987d69ef28127e1e1adad2de8627648a88dc26e62';
+  var DAYS=7, KEY='miaedu_gate';
+  function toHex(buf){return Array.prototype.map.call(new Uint8Array(buf),function(b){return (b<16?'0':'')+b.toString(16)}).join('')}
+  function hashPwd(p){
+    if(!window.crypto||!window.crypto.subtle)return Promise.reject('no-crypto');
+    return window.crypto.subtle.digest('SHA-256',new TextEncoder().encode(p)).then(toHex);
+  }
+  function validToken(t){
+    if(!t)return false;
+    var i=t.indexOf('.');
+    if(i<0)return false;
+    return t.slice(0,i)===HASH.slice(0,24)&&(Date.now()-Number(t.slice(i+1)))<DAYS*864e5;
+  }
+  try{
+    var saved=localStorage.getItem(KEY);
+    if(validToken(saved)){unlock();return}
+  }catch(e){}
+  function unlock(){
+    var g=document.getElementById('eduGate');
+    if(g&&g.parentNode)g.parentNode.removeChild(g);
+  }
+  var input=document.getElementById('eduPass');
+  var btn=document.getElementById('eduBtn');
+  var err=document.getElementById('eduErr');
+  var rem=document.getElementById('eduRem');
+  function submit(){
+    if(btn.disabled)return;
+    var p=input.value;
+    if(!p){input.focus();return}
+    err.style.display='none';
+    btn.disabled=true;
+    hashPwd(p).then(function(h){
+      if(h===HASH){
+        try{
+          if(rem.checked){localStorage.setItem(KEY,HASH.slice(0,24)+'.'+Date.now())}
+        }catch(e){}
+        unlock();
+      }else{
+        btn.disabled=false;
+        err.style.display='block';
+        input.value='';
+        input.focus();
+      }
+    }).catch(function(){
+      btn.disabled=false;
+      err.textContent='当前环境不支持加密校验，请使用 https 方式打开';
+      err.style.display='block';
+    });
+  }
+  btn.addEventListener('click',submit);
+  input.addEventListener('keydown',function(e){if(e.key==='Enter')submit()});
+  setTimeout(function(){input.focus()},120);
+})();
+</script>
 <div id="app">
   <div class="header">
     <div style="display:flex;align-items:center;gap:12px">
