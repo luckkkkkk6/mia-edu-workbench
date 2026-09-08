@@ -119,6 +119,15 @@ a{text-decoration:none;color:inherit}
 .badge-danger{background:rgba(232,146,156,.15);color:var(--danger)}
 .badge-info{background:rgba(154,170,216,.15);color:var(--info)}
 
+/* 历史考勤记录 */
+.hist-chip{display:inline-flex;align-items:center;padding:5px 12px;margin:0 6px 6px 0;border-radius:14px;font-size:12px;color:var(--text-secondary);background:var(--primary-bg);border:none;cursor:pointer;transition:all .2s}
+.hist-chip.active{background:var(--primary-dark);color:#fff}
+.hist-stats{display:flex;gap:8px;margin-bottom:2px}
+.hist-stat{flex:1;background:var(--primary-bg);border-radius:10px;padding:10px 8px;text-align:center}
+.hist-stat-num{font-size:20px;font-weight:700;color:var(--primary-dark);line-height:1.2}
+.hist-stat-label{font-size:11px;color:var(--text-secondary);margin-top:2px}
+.hist-class-title{font-size:13px;font-weight:600;color:var(--primary-dark);padding:10px 0 4px;margin-top:6px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+
 /* Modal */
 .modal-overlay{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(61,49,81,.4);z-index:1000;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(2px)}
 .modal{background:#fff;border-radius:var(--radius-lg);box-shadow:var(--shadow-modal);width:100%;max-width:520px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden}
@@ -1725,10 +1734,13 @@ route('/homework/new',async()=>{
 });
 
 /* ==================== 考勤管理 ==================== */
+let attActiveTab='checkin',attHistoryDate='',attHistorySid='';
 route('/attendance',async()=>{
   const content=document.getElementById('contentInner');
   const classes=await dbGetAll('classes');
   const allAttendance=await dbGetAll('attendance');
+  const allStudents=await dbGetAll('students');
+  const classMap={};classes.forEach(c=>classMap[c.id]=c.name);
   const leaveRecords=allAttendance.filter(r=>r.type==='leave').sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
   const rescheduleRecords=allAttendance.filter(r=>r.type==='reschedule').sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
 
@@ -1738,6 +1750,7 @@ route('/attendance',async()=>{
       <div class="tab active" data-att-tab="checkin">签到</div>
       <div class="tab" data-att-tab="leave">请假调课</div>
       <div class="tab" data-att-tab="schedule">上课时间</div>
+      <div class="tab" data-att-tab="history">历史记录</div>
     </div>
     <div id="attTabContent"></div>
   `;
@@ -1822,6 +1835,34 @@ route('/attendance',async()=>{
     `;
   }
 
+  /* ---- Tab: 历史记录 ---- */
+  function renderHistoryTab(){
+    return `
+      <div class="card">
+        <div class="card-title">按日期查看</div>
+        <div class="form-row">
+          <div class="form-group" style="margin-bottom:6px">
+            <label class="form-label">选择日期</label>
+            <input class="form-input" type="date" id="histDate" value="${attHistoryDate||todayStr()}">
+          </div>
+        </div>
+        <div id="histChips" style="margin-top:2px"></div>
+        <div id="histByDate" style="margin-top:4px"></div>
+      </div>
+      <div class="card" style="margin-top:12px">
+        <div class="card-title">按学生查看</div>
+        <div class="form-group" style="margin-bottom:6px">
+          <label class="form-label">选择学生</label>
+          <select class="form-select" id="histStudent">
+            <option value="">请选择学生</option>
+            ${allStudents.map(s=>`<option value="${s.id}"${attHistorySid===s.id?' selected':''}>${escapeHtml(s.name)}${s.classId&&classMap[s.classId]?'（'+escapeHtml(classMap[s.classId])+'）':''}</option>`).join('')}
+          </select>
+        </div>
+        <div id="histByStudent" style="margin-top:4px"></div>
+      </div>
+    `;
+  }
+
   /* ---- Tab 渲染分发 ---- */
   const renderTab=(tab)=>{
     document.querySelectorAll('[data-att-tab]').forEach(el=>el.classList.toggle('active',el.dataset.attTab===tab));
@@ -1872,13 +1913,144 @@ route('/attendance',async()=>{
       el.innerHTML=renderLeaveTab();
     }else if(tab==='schedule'){
       el.innerHTML=renderScheduleTab();
+    }else if(tab==='history'){
+      el.innerHTML=renderHistoryTab();
+      const dateInput=document.getElementById('histDate');
+      const chipEl=document.getElementById('histChips');
+      const byDateEl=document.getElementById('histByDate');
+      const studentSel=document.getElementById('histStudent');
+      const byStudentEl=document.getElementById('histByStudent');
+      const fmtClock=iso=>{if(!iso)return'';const d=new Date(iso);return isNaN(d)?'':String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0')};
+      const leaveTypeName=t=>t==='sick'?'病假':t==='personal'?'事假':'其他';
+      const recSortKey=r=>r.checkinTime||r.createdAt||r.date||'';
+
+      /* 有考勤记录的日期快捷 chips */
+      function renderChips(){
+        const dates=[...new Set(allAttendance.filter(r=>r.date).map(r=>r.date))].sort().reverse();
+        if(dates.length===0){chipEl.innerHTML='<div style="font-size:12px;color:var(--text-tertiary);padding:2px 0 6px">暂无历史考勤记录</div>';return}
+        chipEl.innerHTML=dates.map(d=>`<button type="button" class="hist-chip${d===dateInput.value?' active':''}" data-d="${d}">${d.slice(5).replace('-','/')}</button>`).join('');
+        chipEl.querySelectorAll('.hist-chip').forEach(b=>{
+          b.addEventListener('click',()=>{
+            dateInput.value=b.dataset.d;
+            attHistoryDate=dateInput.value;
+            renderChips();
+            renderByDate();
+          });
+        });
+      }
+
+      /* 按日期渲染当日考勤 */
+      function renderByDate(){
+        const date=dateInput.value;
+        if(!date){byDateEl.innerHTML='';renderChips();return}
+        renderChips();
+        const recs=allAttendance.filter(r=>r.date===date);
+        if(recs.length===0){
+          byDateEl.innerHTML='<div class="empty-state" style="padding:24px 12px"><div class="empty-state-icon">📅</div><div class="empty-state-text">该日期暂无考勤记录</div></div>';
+          return;
+        }
+        const checked=recs.filter(r=>r.type==='checked-in').slice().sort((a,b)=>(a.checkinTime||'').localeCompare(b.checkinTime||''));
+        const leaves=recs.filter(r=>r.type==='leave');
+        const groups={};
+        checked.forEach(r=>{(groups[r.classId]||(groups[r.classId]=[])).push(r)});
+        let html=`<div class="hist-stats">
+          <div class="hist-stat"><div class="hist-stat-num">${checked.length}</div><div class="hist-stat-label">出勤</div></div>
+          <div class="hist-stat"><div class="hist-stat-num">${leaves.length}</div><div class="hist-stat-label">请假</div></div>
+          <div class="hist-stat"><div class="hist-stat-num">${Object.keys(groups).length}</div><div class="hist-stat-label">涉及班级</div></div>
+        </div>`;
+        Object.keys(groups).forEach(cid=>{
+          const cname=cid&&classMap[cid]?classMap[cid]:'未分班';
+          html+=`<div class="hist-class-title"><span>${escapeHtml(cname)}</span><span style="font-weight:500;font-size:12px;color:var(--text-secondary)">${groups[cid].length} 人出勤</span></div>`;
+          html+=groups[cid].map(r=>`
+            <div class="list-item" style="padding:9px 0">
+              <div class="avatar avatar-sm" style="background:${avatarColor(r.studentName||'?')}">${getInitials(r.studentName||'?')}</div>
+              <div class="list-item-info">
+                <div class="list-item-title">${escapeHtml(r.studentName||'')}</div>
+                <div class="list-item-desc"><span class="badge badge-success">出勤</span> ${fmtClock(r.checkinTime)} 签到</div>
+              </div>
+              <button class="btn btn-sm btn-danger" data-action="del-attendance" data-id="${r.id}">删除</button>
+            </div>`).join('');
+        });
+        if(leaves.length>0){
+          html+=`<div class="hist-class-title"><span>当日请假</span><span style="font-weight:500;font-size:12px;color:var(--text-secondary)">${leaves.length} 人</span></div>`;
+          html+=leaves.map(r=>`
+            <div class="list-item" style="padding:9px 0">
+              <div class="avatar avatar-sm" style="background:${avatarColor(r.studentName||'?')}">${getInitials(r.studentName||'?')}</div>
+              <div class="list-item-info">
+                <div class="list-item-title">${escapeHtml(r.studentName||'')}</div>
+                <div class="list-item-desc"><span class="badge badge-warning">${leaveTypeName(r.leaveType)}</span>${r.remark?' '+escapeHtml(r.remark):''}</div>
+              </div>
+              <button class="btn btn-sm btn-danger" data-action="del-attendance" data-id="${r.id}">删除</button>
+            </div>`).join('');
+        }
+        byDateEl.innerHTML=html;
+      }
+
+      /* 按学生渲染历史时间线 */
+      function renderByStudent(){
+        const sid=studentSel.value;
+        if(!sid){byStudentEl.innerHTML='';return}
+        const recs=allAttendance.filter(r=>r.studentId===sid);
+        if(recs.length===0){
+          byStudentEl.innerHTML='<div class="empty-state" style="padding:24px 12px"><div class="empty-state-icon">👤</div><div class="empty-state-text">该学生暂无考勤记录</div></div>';
+          return;
+        }
+        const nCheck=recs.filter(r=>r.type==='checked-in').length;
+        const nLeave=recs.filter(r=>r.type==='leave').length;
+        const nRs=recs.filter(r=>r.type==='reschedule').length;
+        const ordered=recs.slice().sort((a,b)=>recSortKey(b).localeCompare(recSortKey(a)));
+        let html=`<div class="hist-stats">
+          <div class="hist-stat"><div class="hist-stat-num">${nCheck}</div><div class="hist-stat-label">出勤(次)</div></div>
+          <div class="hist-stat"><div class="hist-stat-num">${nLeave}</div><div class="hist-stat-label">请假(次)</div></div>
+          <div class="hist-stat"><div class="hist-stat-num">${nRs}</div><div class="hist-stat-label">调课(次)</div></div>
+        </div>`;
+        html+=ordered.map(r=>{
+          let badge,desc;
+          if(r.type==='checked-in'){
+            badge='<span class="badge badge-success">出勤</span>';
+            desc=`${fmtDate(r.date)} ${fmtClock(r.checkinTime)} 签到`;
+          }else if(r.type==='leave'){
+            badge=`<span class="badge badge-warning">${leaveTypeName(r.leaveType)}</span>`;
+            desc=`${fmtDate(r.date)}${r.remark?' · '+escapeHtml(r.remark):''}`;
+          }else{
+            badge='<span class="badge badge-info">调课</span>';
+            desc=`${fmtDate(r.originalDate)} → ${fmtDate(r.newDate)}${r.reason?' · '+escapeHtml(r.reason):''}`;
+          }
+          return `
+            <div class="list-item" style="padding:9px 0">
+              <div class="avatar avatar-sm" style="background:${avatarColor(r.studentName||'?')}">${getInitials(r.studentName||'?')}</div>
+              <div class="list-item-info">
+                <div class="list-item-title">${badge}</div>
+                <div class="list-item-desc">${desc}</div>
+              </div>
+              <button class="btn btn-sm btn-danger" data-action="del-attendance" data-id="${r.id}">删除</button>
+            </div>`;
+        }).join('');
+        byStudentEl.innerHTML=html;
+      }
+
+      if(attHistorySid)studentSel.value=attHistorySid;
+      dateInput.addEventListener('change',()=>{
+        attHistoryDate=dateInput.value;
+        renderChips();
+        renderByDate();
+      });
+      studentSel.addEventListener('change',()=>{
+        attHistorySid=studentSel.value;
+        renderByStudent();
+      });
+      renderByDate();
+      renderByStudent();
     }
   };
 
   document.querySelectorAll('[data-att-tab]').forEach(el=>{
-    el.addEventListener('click',()=>renderTab(el.dataset.attTab));
+    el.addEventListener('click',()=>{
+      attActiveTab=el.dataset.attTab;
+      renderTab(attActiveTab);
+    });
   });
-  renderTab('checkin');
+  renderTab(attActiveTab);
 });
 
 /* ==================== 积分管理 ==================== */
