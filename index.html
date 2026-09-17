@@ -2054,6 +2054,7 @@ route('/attendance',async()=>{
 });
 
 /* ==================== 积分管理 ==================== */
+let ptsActiveTab='records',ptsFilterStudent='',ptsFilterFrom='',ptsFilterTo='';
 route('/points',async()=>{
   const content=document.getElementById('contentInner');
   const students=await dbGetAll('students');
@@ -2083,20 +2084,104 @@ route('/points',async()=>{
     if(tab==='records'){
       el.innerHTML=`
         <div style="margin-bottom:12px"><button class="btn btn-primary" data-action="add-points">新增积分</button></div>
-        <div class="card"><div>${pointsRecords.length===0?'<div class="empty-state"><div class="empty-state-text">暂无积分记录</div></div>':pointsRecords.sort((a,b)=>(b.date||'').localeCompare(a.date||'')).map(p=>`
-          <div class="list-item">
+        <div class="card">
+          <div class="card-title">筛选查看</div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">学生</label>
+              <select class="form-select" id="ptFilterStudent">
+                <option value="">全部学生</option>
+                ${students.map(s=>`<option value="${s.id}"${ptsFilterStudent===s.id?' selected':''}>${escapeHtml(s.name)}</option>`).join('')}
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">开始日期</label>
+              <input class="form-input" type="date" id="ptDateFrom" value="${ptsFilterFrom}">
+            </div>
+            <div class="form-group">
+              <label class="form-label">结束日期</label>
+              <input class="form-input" type="date" id="ptDateTo" value="${ptsFilterTo}">
+            </div>
+          </div>
+          <div id="ptQuickChips"></div>
+          <div id="ptFilteredList" style="margin-top:4px"></div>
+        </div>
+      `;
+      const selStu=document.getElementById('ptFilterStudent');
+      const dFrom=document.getElementById('ptDateFrom');
+      const dTo=document.getElementById('ptDateTo');
+      const chipsEl=document.getElementById('ptQuickChips');
+      const listEl=document.getElementById('ptFilteredList');
+
+      const inRange=(p)=>{
+        if(ptsFilterStudent&&p.studentId!==ptsFilterStudent)return false;
+        if(ptsFilterFrom&&(!p.date||p.date<ptsFilterFrom))return false;
+        if(ptsFilterTo&&(!p.date||p.date>ptsFilterTo))return false;
+        return true;
+      };
+
+      function renderQuickChips(){
+        const today=todayStr();
+        const d7=new Date();d7.setDate(d7.getDate()-6);
+        const monday=(()=>{const dt=new Date();const dow=(dt.getDay()+6)%7;dt.setDate(dt.getDate()-dow);return fmtDate(dt)})();
+        const chips=[
+          {label:'近7天',from:fmtDate(d7),to:today},
+          {label:'本周',from:monday,to:today},
+          {label:'本月',from:today.slice(0,8)+'01',to:today},
+          {label:'全部',from:'',to:''},
+        ];
+        chipsEl.innerHTML=chips.map(c=>`<button type="button" class="hist-chip${ptsFilterFrom===c.from&&ptsFilterTo===c.to?' active':''}" data-f="${c.from}" data-t="${c.to}">${c.label}</button>`).join('');
+        chipsEl.querySelectorAll('.hist-chip').forEach(b=>{
+          b.addEventListener('click',()=>{
+            ptsFilterFrom=b.dataset.f;ptsFilterTo=b.dataset.t;
+            dFrom.value=ptsFilterFrom;dTo.value=ptsFilterTo;
+            renderQuickChips();
+            renderFiltered();
+          });
+        });
+      }
+
+      function renderFiltered(){
+        const list=pointsRecords.filter(inRange).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'')||(b.createdAt||'').localeCompare(a.createdAt||''));
+        const addSum=list.filter(p=>p.type==='add').reduce((s,p)=>s+(p.amount||0),0);
+        const dedSum=list.filter(p=>p.type!=='add').reduce((s,p)=>s+(p.amount||0),0);
+        let html=`<div class="hist-stats">
+          <div class="hist-stat"><div class="hist-stat-num">${addSum}</div><div class="hist-stat-label">总加分</div></div>
+          <div class="hist-stat"><div class="hist-stat-num">${dedSum}</div><div class="hist-stat-label">总扣分</div></div>
+          <div class="hist-stat"><div class="hist-stat-num">${addSum-dedSum}</div><div class="hist-stat-label">净积分</div></div>
+        </div>`;
+        if(ptsFilterStudent){
+          const st=students.find(s=>s.id===ptsFilterStudent);
+          const total=pointsRecords.filter(p=>p.studentId===ptsFilterStudent).reduce((s,p)=>s+(p.type==='add'?p.amount:-p.amount),0);
+          html+=`<div style="display:flex;justify-content:space-between;align-items:center;gap:8px;padding:8px 0 2px">
+            <div style="font-size:13px;color:var(--text-secondary)">${escapeHtml(st?st.name:'该学生')} 当前总积分：<strong style="color:var(--primary-dark)">${total}</strong></div>
+            <button class="btn btn-sm btn-danger" data-action="clear-student-points" data-id="${ptsFilterStudent}">清空全部积分</button>
+          </div>`;
+        }
+        html+=list.length===0
+          ?'<div class="empty-state" style="padding:24px 12px"><div class="empty-state-icon">⭐</div><div class="empty-state-text">当前筛选条件下暂无积分记录</div></div>'
+          :list.map(p=>`
+          <div class="list-item" style="padding:9px 0">
             <div class="list-item-info">
               <div class="list-item-title">${escapeHtml(p.studentName||'')} <span class="badge badge-${p.type==='add'?'success':'danger'}">${p.type==='add'?'+':'-'}${p.amount}</span></div>
               <div class="list-item-desc">${escapeHtml(p.reason||'')} · ${fmtDate(p.date)}</div>
             </div>
             <button class="btn btn-sm btn-danger" data-action="del-points" data-id="${p.id}">删除</button>
-          </div>
-        `).join('')}</div></div>
-      `;
+          </div>`).join('');
+        listEl.innerHTML=html;
+      }
+
+      selStu.addEventListener('change',()=>{ptsFilterStudent=selStu.value;renderFiltered();});
+      dFrom.addEventListener('change',()=>{ptsFilterFrom=dFrom.value;renderQuickChips();renderFiltered();});
+      dTo.addEventListener('change',()=>{ptsFilterTo=dTo.value;renderQuickChips();renderFiltered();});
+      renderQuickChips();
+      renderFiltered();
     }else if(tab==='ranking'){
       const sorted=Object.entries(pointsByStudent).sort((a,b)=>b[1].total-a[1].total);
       el.innerHTML=`<div class="card"><div>${sorted.length===0?'<div class="empty-state"><div class="empty-state-text">暂无数据</div></div>':sorted.map(([id,data],i)=>`
-        <div class="list-item">
+        <div class="list-item" data-action="filter-student-points" data-id="${id}" style="cursor:pointer">
           <div style="width:24px;text-align:center;font-weight:700;color:${i<3?'var(--warning)':'var(--text-tertiary)'}">${i+1}</div>
           <div class="list-item-info"><div class="list-item-title">${escapeHtml(data.name)}</div></div>
           <div class="points-display" style="font-size:18px">${data.total}</div>
@@ -2121,9 +2206,12 @@ route('/points',async()=>{
   };
 
   document.querySelectorAll('[data-points-tab]').forEach(el=>{
-    el.addEventListener('click',()=>renderTab(el.dataset.pointsTab));
+    el.addEventListener('click',()=>{
+      ptsActiveTab=el.dataset.pointsTab;
+      renderTab(ptsActiveTab);
+    });
   });
-  renderTab('records');
+  renderTab(ptsActiveTab);
 });
 
 /* ==================== 收费管理 ==================== */
@@ -2858,6 +2946,27 @@ document.addEventListener('click',async e=>{
         toast('删除成功');
         navigate('/points');
       });
+      break;
+    }
+
+    case 'clear-student-points':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const st=await dbGet('students',id);
+      const recs=await dbQuery('points_records','studentId',id);
+      if(recs.length===0){toast('该学生暂无积分记录');break}
+      confirmDialog('清空积分',`确定删除 ${st?st.name:'该学生'} 的全部 ${recs.length} 条积分记录？此操作不可恢复！`,async()=>{
+        for(const r of recs)await dbDel('points_records',r.id);
+        toast(`已清空 ${st?st.name:'该学生'} 的全部积分`);
+        navigate('/points');
+      });
+      break;
+    }
+
+    case 'filter-student-points':{
+      ptsFilterStudent=target.dataset.id||'';
+      ptsActiveTab='records';
+      navigate('/points');
       break;
     }
 
