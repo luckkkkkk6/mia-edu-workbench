@@ -126,6 +126,28 @@ a{text-decoration:none;color:inherit}
 .hist-stat{flex:1;background:var(--primary-bg);border-radius:10px;padding:10px 8px;text-align:center}
 .hist-stat-num{font-size:20px;font-weight:700;color:var(--primary-dark);line-height:1.2}
 .hist-stat-label{font-size:11px;color:var(--text-secondary);margin-top:2px}
+/* 成绩趋势条 */
+.score-row{padding:10px 0;border-bottom:1px solid var(--border-light)}
+.score-row:last-child{border-bottom:none}
+.score-row-head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.score-row-name{font-size:14px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.score-subject{font-size:12px;color:var(--text-secondary);margin-left:4px}
+.score-date{font-size:11px;color:var(--text-tertiary,var(--text-secondary));margin-left:6px}
+.score-row-num{flex-shrink:0}
+.score-full{font-size:12px;color:var(--text-secondary)}
+.score-bar{height:8px;border-radius:4px;background:var(--border-light);overflow:hidden;margin:6px 0 4px}
+.score-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.score-row-foot{font-size:11px;color:var(--text-secondary)}
+/* 高频错题条 */
+.freq-note{font-size:11px;color:var(--text-secondary);margin-bottom:10px}
+.freq-row{padding:10px 0;border-bottom:1px solid var(--border-light)}
+.freq-row:last-child{border-bottom:none}
+.freq-row-head{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.freq-row-name{font-size:13px;font-weight:500;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.freq-row-num{font-size:14px;font-weight:700;flex-shrink:0}
+.freq-bar{height:8px;border-radius:4px;background:var(--border-light);overflow:hidden;margin:6px 0 4px}
+.freq-bar-fill{height:100%;border-radius:4px;transition:width .3s}
+.freq-row-foot{font-size:11px;color:var(--text-secondary)}
 .hist-class-title{font-size:13px;font-weight:600;color:var(--primary-dark);padding:10px 0 4px;margin-top:6px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
 
 /* Modal */
@@ -808,6 +830,13 @@ function confirmDialog(title,message,onConfirm){
   document.getElementById('confirmBtn').addEventListener('click',()=>{closeModal();onConfirm()});
 }
 
+/* 按得分率返回徽章类型（考虑满分） */
+function scoreBadgeType(score,fullScore){
+  const full=fullScore?Number(fullScore):100;
+  const rate=full>0?Number(score)/full*100:0;
+  return rate>=80?'success':rate>=60?'warning':'danger';
+}
+
 /* ==================== 首页 Dashboard ==================== */
 route('/dashboard',async()=>{
   const content=document.getElementById('contentInner');
@@ -1377,46 +1406,105 @@ async function renderStudyRecords(el){
     <div class="card"><div>${records.length===0?'<div class="empty-state"><div class="empty-state-text">暂无记录</div></div>':records.map(r=>`
       <div class="list-item">
         <div class="list-item-info">
-          <div class="list-item-title">${escapeHtml(studentMap[r.studentId]||'未知')} - ${escapeHtml(r.subject||'')}</div>
+          <div class="list-item-title">${escapeHtml(studentMap[r.studentId]||'未知')} - ${escapeHtml(r.subject||'')}${r.score!=null?` <span class="badge badge-${scoreBadgeType(r.score,r.fullScore)}">${r.score}${r.fullScore?`/${r.fullScore}`:''}分</span>`:''}</div>
           <div class="list-item-desc">${escapeHtml(r.content||'').slice(0,60)} · ${fmtDate(r.date)}</div>
         </div>
-        <button class="btn btn-sm btn-danger" data-action="del-study-record" data-id="${r.id}">删除</button>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-outline" data-action="edit-study-record" data-id="${r.id}">编辑</button>
+          <button class="btn btn-sm btn-danger" data-action="del-study-record" data-id="${r.id}">删除</button>
+        </div>
       </div>
     `).join('')}</div></div>
   `;
 }
 
+let trendFilterClass='';
+let trendFilterStudent='';
+
 async function renderStudyTrends(el){
   const records=await dbGetAll('study_records');
   const students=await dbGetAll('students');
-  const studentMap={};
-  students.forEach(s=>studentMap[s.id]=s.name);
-  const scoreRecords=records.filter(r=>r.score!=null);
+  const classes=await dbGetAll('classes');
+  const studentMap={},studentClass={};
+  students.forEach(s=>{studentMap[s.id]=s.name;studentClass[s.id]=s.classId||''});
+  const classMap={};
+  classes.forEach(c=>classMap[c.id]=c.name);
+  const allScoreRecords=records.filter(r=>r.score!=null);
+
+  const draw=()=>{
+    const scoreRecords=allScoreRecords.filter(r=>{
+      if(trendFilterClass&&studentClass[r.studentId]!==trendFilterClass)return false;
+      if(trendFilterStudent&&r.studentId!==trendFilterStudent)return false;
+      return true;
+    });
+    // 统计
+    let sumGot=0,sumFull=0,cnt=0;
+    scoreRecords.forEach(r=>{
+      const full=r.fullScore?Number(r.fullScore):100;
+      sumGot+=Number(r.score);sumFull+=full;cnt++;
+    });
+    const avgRate=cnt?Math.round(sumGot/sumFull*100):0;
+    const avgScore=cnt?Math.round(sumGot/cnt*10)/10:0;
+
+    const listEl=document.getElementById('trendList');
+    if(!listEl)return;
+    listEl.innerHTML=scoreRecords.length===0?'<div class="empty-state"><div class="empty-state-text">当前筛选条件下暂无成绩数据</div></div>':`
+      <div class="hist-stats" style="margin-bottom:14px">
+        <div class="hist-stat"><div class="hist-stat-num">${cnt}</div><div class="hist-stat-label">考试次数</div></div>
+        <div class="hist-stat"><div class="hist-stat-num">${avgScore}</div><div class="hist-stat-label">平均实际分</div></div>
+        <div class="hist-stat"><div class="hist-stat-num">${avgRate}%</div><div class="hist-stat-label">平均得分率</div></div>
+      </div>
+      ${scoreRecords.map(r=>{
+        const full=r.fullScore?Number(r.fullScore):100;
+        const rate=Math.max(0,Math.min(100,Math.round(Number(r.score)/full*100)));
+        const color=rate>=80?'var(--success)':rate>=60?'var(--warning)':'var(--danger)';
+        return `
+        <div class="score-row">
+          <div class="score-row-head">
+            <div class="score-row-name">${escapeHtml(studentMap[r.studentId]||'未知')} <span class="score-subject">${escapeHtml(r.subject||'')}</span><span class="score-date">${fmtDate(r.date)}</span></div>
+            <div class="score-row-num"><span style="color:${color};font-weight:700;font-size:16px">${r.score}</span><span class="score-full">/${full}</span></div>
+          </div>
+          <div class="score-bar"><div class="score-bar-fill" style="width:${rate}%;background:${color}"></div></div>
+          <div class="score-row-foot">得分率 <b style="color:${color}">${rate}%</b> · 失分 <b style="color:var(--danger)">${Math.max(0,Math.round((full-Number(r.score))*10)/10)}</b> 分</div>
+        </div>`;
+      }).join('')}
+    `;
+  };
+
   el.innerHTML=`
     <div class="card">
       <div class="card-title">成绩趋势</div>
-      ${scoreRecords.length===0?'<div class="empty-state"><div class="empty-state-text">暂无成绩数据</div></div>':`
-        <select class="form-select" id="trendStudent" style="margin-bottom:12px">
-          <option value="">全部学生</option>
-          ${students.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
-        </select>
-        <div class="data-table-wrap" style="overflow-x:auto">
-          <table class="data-table">
-            <thead><tr><th>学生</th><th>科目</th><th>分数</th><th>日期</th></tr></thead>
-            <tbody>
-              ${scoreRecords.map(r=>`<tr><td>${escapeHtml(studentMap[r.studentId]||'')}</td><td>${escapeHtml(r.subject||'')}</td><td style="font-weight:600;color:${r.score>=80?'var(--success)':r.score>=60?'var(--warning)':'var(--danger)'}">${r.score}</td><td>${fmtDate(r.date)}</td></tr>`).join('')}
-            </tbody>
-          </table>
+      ${allScoreRecords.length===0?'<div class="empty-state"><div class="empty-state-text">暂无成绩数据</div></div>':`
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">班级</label>
+            <select class="form-select" id="trendClass">
+              <option value="">全部班级</option>
+              ${classes.map(c=>`<option value="${c.id}" ${trendFilterClass===c.id?'selected':''}>${escapeHtml(c.name)}</option>`).join('')}
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">学生</label>
+            <select class="form-select" id="trendStudent">
+              <option value="">全部学生</option>
+              ${students.filter(s=>!trendFilterClass||s.classId===trendFilterClass).map(s=>`<option value="${s.id}" ${trendFilterStudent===s.id?'selected':''}>${escapeHtml(s.name)}</option>`).join('')}
+            </select>
+          </div>
         </div>
+        <div id="trendList"></div>
       `}
     </div>
   `;
-  const trendSel=document.getElementById('trendStudent');
-  if(trendSel)trendSel.addEventListener('change',e=>{
-    const tbody=el.querySelector('tbody');
-    const filtered=e.target.value?scoreRecords.filter(r=>r.studentId===e.target.value):scoreRecords;
-    tbody.innerHTML=filtered.map(r=>`<tr><td>${escapeHtml(studentMap[r.studentId]||'')}</td><td>${escapeHtml(r.subject||'')}</td><td style="font-weight:600;color:${r.score>=80?'var(--success)':r.score>=60?'var(--warning)':'var(--danger)'}">${r.score}</td><td>${fmtDate(r.date)}</td></tr>`).join('');
+
+  const classSel=document.getElementById('trendClass');
+  if(classSel)classSel.addEventListener('change',e=>{
+    trendFilterClass=e.target.value;
+    trendFilterStudent='';
+    renderStudyTrends(el);
   });
+  const sel=document.getElementById('trendStudent');
+  if(sel)sel.addEventListener('change',e=>{trendFilterStudent=e.target.value;draw()});
+  draw();
 }
 
 async function renderErrorAnalysis(el){
@@ -1425,17 +1513,67 @@ async function renderErrorAnalysis(el){
   const studentMap={};
   students.forEach(s=>studentMap[s.id]=s.name);
   errors.sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+
+  // 高频错题聚合：按 科目.知识点 聚合（topic 为空时归为"未分类"）
+  const freqMap={};
+  errors.forEach(e=>{
+    const subject=(e.subject||'未填科目').trim();
+    const topic=(e.topic||'').trim();
+    const key=subject+'||'+topic;
+    if(!freqMap[key])freqMap[key]={subject,topic,count:0,lastDate:e.date||'',students:new Set(),ids:[]};
+    freqMap[key].count++;
+    freqMap[key].ids.push(e.id);
+    if(e.studentId)freqMap[key].students.add(e.studentId);
+    if((e.date||'')>freqMap[key].lastDate)freqMap[key].lastDate=e.date||'';
+  });
+  const freqList=Object.values(freqMap).sort((a,b)=>b.count-a.count||(b.lastDate||'').localeCompare(a.lastDate||''));
+  const maxCount=freqList.length?freqList[0].count:0;
+  const hotList=freqList.filter(f=>f.count>=2);
+  const hotStudents=new Set();errors.forEach(e=>{if(e.studentId)hotStudents.add(e.studentId)});
+
   el.innerHTML=`
     <div style="margin-bottom:12px"><button class="btn btn-primary" data-action="add-error">新增错题</button></div>
-    <div class="card"><div>${errors.length===0?'<div class="empty-state"><div class="empty-state-text">暂无错题</div></div>':errors.map(e=>`
+    ${freqList.length?`
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-title" style="display:flex;justify-content:space-between;align-items:center">
+        <span>出错高频板块</span>
+        <span class="badge badge-danger">高频出错 ${hotList.length} 类</span>
+      </div>
+      <div class="hist-stats" style="margin-bottom:14px">
+        <div class="hist-stat"><div class="hist-stat-num">${errors.length}</div><div class="hist-stat-label">错题总数</div></div>
+        <div class="hist-stat"><div class="hist-stat-num">${freqList.length}</div><div class="hist-stat-label">涉及知识点</div></div>
+        <div class="hist-stat"><div class="hist-stat-num">${hotList.length}</div><div class="hist-stat-label">高频(≥2次)</div></div>
+      </div>
+      <div class="freq-note">按出错次数排序，红色为高频薄弱点，优先突破</div>
+      ${freqList.slice(0,10).map(f=>{
+        const pct=maxCount?Math.round(f.count/maxCount*100):0;
+        const color=f.count>=3?'var(--danger)':f.count>=2?'var(--warning)':'var(--info)';
+        return `
+        <div class="freq-row">
+          <div class="freq-row-head">
+            <div class="freq-row-name"><span class="badge badge-${f.count>=3?'danger':f.count>=2?'warning':'info'}">${escapeHtml(f.subject)}</span> ${escapeHtml(f.topic||'未分类')}</div>
+            <div class="freq-row-num" style="color:${color}">${f.count} 次</div>
+          </div>
+          <div class="freq-bar"><div class="freq-bar-fill" style="width:${pct}%;background:${color}"></div></div>
+          <div class="freq-row-foot">涉及 ${f.students.size} 名学生 · 最近 ${fmtDate(f.lastDate)}</div>
+        </div>`;
+      }).join('')}
+    </div>`:''}
+    <div class="card">
+      <div class="card-title">全部错题（${errors.length}）</div>
+      <div>${errors.length===0?'<div class="empty-state"><div class="empty-state-text">暂无错题</div></div>':errors.map(e=>`
       <div class="list-item">
         <div class="list-item-info">
-          <div class="list-item-title">${escapeHtml(studentMap[e.studentId]||'')} - ${escapeHtml(e.subject||'')}</div>
+          <div class="list-item-title">${escapeHtml(studentMap[e.studentId]||'')} - ${escapeHtml(e.subject||'')}${e.topic?` <span class="badge badge-info">${escapeHtml(e.topic)}</span>`:''}</div>
           <div class="list-item-desc">${escapeHtml(e.description||'').slice(0,60)} · ${fmtDate(e.date)}</div>
         </div>
-        <button class="btn btn-sm btn-danger" data-action="del-error" data-id="${e.id}">删除</button>
+        <div class="list-item-actions">
+          <button class="btn btn-sm btn-outline" data-action="edit-error" data-id="${e.id}">编辑</button>
+          <button class="btn btn-sm btn-danger" data-action="del-error" data-id="${e.id}">删除</button>
+        </div>
       </div>
-    `).join('')}</div></div>
+    `).join('')}</div>
+    </div>
   `;
 }
 
@@ -2406,13 +2544,19 @@ document.addEventListener('click',async e=>{
             <input class="form-input" id="srSubject" placeholder="如：数学">
           </div>
           <div class="form-group">
-            <label class="form-label">分数（可选）</label>
-            <input class="form-input" type="number" id="srScore" placeholder="0-100">
+            <label class="form-label">日期</label>
+            <input class="form-input" type="date" id="srDate" value="${todayStr()}">
           </div>
         </div>
-        <div class="form-group">
-          <label class="form-label">日期</label>
-          <input class="form-input" type="date" id="srDate" value="${todayStr()}">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">实际得分（可选）</label>
+            <input class="form-input" type="number" id="srScore" placeholder="如：86">
+          </div>
+          <div class="form-group">
+            <label class="form-label">满分（可选）</label>
+            <input class="form-input" type="number" id="srFullScore" placeholder="默认100">
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">记录内容</label>
@@ -2425,18 +2569,84 @@ document.addEventListener('click',async e=>{
         if(!studentId){toast('请选择学生');return}
         const student=await dbGet('students',studentId);
         const scoreVal=document.getElementById('srScore').value;
+        const fullVal=document.getElementById('srFullScore').value;
         await dbAdd('study_records',{
           id:genId(),
           studentId,
           studentName:student?.name||'',
           subject:document.getElementById('srSubject').value.trim(),
           score:scoreVal?Number(scoreVal):null,
+          fullScore:scoreVal?(fullVal?Number(fullVal):100):null,
           date:document.getElementById('srDate').value,
           content:document.getElementById('srContent').value.trim(),
           createdAt:new Date().toISOString()
         });
         closeModal();
         toast('保存成功');
+        navigate('/study');
+      });
+      break;
+    }
+
+    case 'edit-study-record':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const rec=await dbGet('study_records',id);
+      if(!rec){toast('记录不存在');break}
+      const students=await dbGetAll('students');
+      const body=`
+        <div class="form-group">
+          <label class="form-label">学生 <span class="req">*</span></label>
+          <select class="form-select" id="srStudent">
+            <option value="">请选择</option>
+            ${students.map(s=>`<option value="${s.id}" ${rec.studentId===s.id?'selected':''}>${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">科目</label>
+            <input class="form-input" id="srSubject" value="${escapeHtml(rec.subject||'')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">日期</label>
+            <input class="form-input" type="date" id="srDate" value="${rec.date||todayStr()}">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">实际得分（可选）</label>
+            <input class="form-input" type="number" id="srScore" value="${rec.score!=null?rec.score:''}" placeholder="如：86">
+          </div>
+          <div class="form-group">
+            <label class="form-label">满分（可选）</label>
+            <input class="form-input" type="number" id="srFullScore" value="${rec.fullScore!=null?rec.fullScore:''}" placeholder="默认100">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">记录内容</label>
+          <textarea class="form-textarea" id="srContent">${escapeHtml(rec.content||'')}</textarea>
+        </div>
+      `;
+      showModal('编辑学情记录',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveSrBtn">保存</button>`);
+      document.getElementById('saveSrBtn').addEventListener('click',async()=>{
+        const studentId=document.getElementById('srStudent').value;
+        if(!studentId){toast('请选择学生');return}
+        const student=await dbGet('students',studentId);
+        const scoreVal=document.getElementById('srScore').value;
+        const fullVal=document.getElementById('srFullScore').value;
+        await dbPut('study_records',{
+          ...rec,
+          studentId,
+          studentName:student?.name||'',
+          subject:document.getElementById('srSubject').value.trim(),
+          score:scoreVal?Number(scoreVal):null,
+          fullScore:scoreVal?(fullVal?Number(fullVal):100):null,
+          date:document.getElementById('srDate').value,
+          content:document.getElementById('srContent').value.trim(),
+          updatedAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('修改成功');
         navigate('/study');
       });
       break;
@@ -2463,9 +2673,15 @@ document.addEventListener('click',async e=>{
             ${students.map(s=>`<option value="${s.id}">${escapeHtml(s.name)}</option>`).join('')}
           </select>
         </div>
-        <div class="form-group">
-          <label class="form-label">科目</label>
-          <input class="form-input" id="erSubject" placeholder="如：数学">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">科目</label>
+            <input class="form-input" id="erSubject" placeholder="如：数学">
+          </div>
+          <div class="form-group">
+            <label class="form-label">知识点（用于统计）</label>
+            <input class="form-input" id="erTopic" placeholder="如：分数计算">
+          </div>
         </div>
         <div class="form-group">
           <label class="form-label">错题描述 <span class="req">*</span></label>
@@ -2488,12 +2704,70 @@ document.addEventListener('click',async e=>{
           studentId,
           studentName:student?.name||'',
           subject:document.getElementById('erSubject').value.trim(),
+          topic:document.getElementById('erTopic').value.trim(),
           description:desc,
           date:document.getElementById('erDate').value,
           createdAt:new Date().toISOString()
         });
         closeModal();
         toast('保存成功');
+        navigate('/study');
+      });
+      break;
+    }
+
+    case 'edit-error':{
+      e.stopPropagation();
+      const id=target.dataset.id;
+      const rec=await dbGet('error_analysis',id);
+      if(!rec){toast('记录不存在');break}
+      const students=await dbGetAll('students');
+      const body=`
+        <div class="form-group">
+          <label class="form-label">学生 <span class="req">*</span></label>
+          <select class="form-select" id="erStudent">
+            <option value="">请选择</option>
+            ${students.map(s=>`<option value="${s.id}" ${rec.studentId===s.id?'selected':''}>${escapeHtml(s.name)}</option>`).join('')}
+          </select>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">科目</label>
+            <input class="form-input" id="erSubject" value="${escapeHtml(rec.subject||'')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">知识点（用于统计）</label>
+            <input class="form-input" id="erTopic" value="${escapeHtml(rec.topic||'')}" placeholder="如：分数计算">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">错题描述 <span class="req">*</span></label>
+          <textarea class="form-textarea" id="erDesc">${escapeHtml(rec.description||'')}</textarea>
+        </div>
+        <div class="form-group">
+          <label class="form-label">日期</label>
+          <input class="form-input" type="date" id="erDate" value="${rec.date||todayStr()}">
+        </div>
+      `;
+      showModal('编辑错题',body,`<button class="btn btn-outline" data-action="close-modal">取消</button><button class="btn btn-primary" id="saveErrBtn">保存</button>`);
+      document.getElementById('saveErrBtn').addEventListener('click',async()=>{
+        const studentId=document.getElementById('erStudent').value;
+        if(!studentId){toast('请选择学生');return}
+        const desc=document.getElementById('erDesc').value.trim();
+        if(!desc){toast('请输入错题描述');return}
+        const student=await dbGet('students',studentId);
+        await dbPut('error_analysis',{
+          ...rec,
+          studentId,
+          studentName:student?.name||'',
+          subject:document.getElementById('erSubject').value.trim(),
+          topic:document.getElementById('erTopic').value.trim(),
+          description:desc,
+          date:document.getElementById('erDate').value,
+          updatedAt:new Date().toISOString()
+        });
+        closeModal();
+        toast('修改成功');
         navigate('/study');
       });
       break;
